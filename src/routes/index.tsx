@@ -26,6 +26,12 @@ import {
   Maximize2,
   Minimize2,
   X,
+  Square,
+  QrCode,
+  Radio,
+  Thermometer,
+  Gauge,
+  CircleDot,
 } from "lucide-react";
 import floorPlan from "@/assets/floor-plan.jpg";
 
