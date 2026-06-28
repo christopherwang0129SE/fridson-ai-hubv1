@@ -23,6 +23,8 @@ import {
   Lightbulb,
   Droplet,
   Layers,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import floorPlan from "@/assets/floor-plan.jpg";
 
@@ -248,6 +250,21 @@ const FLOORS: Floor[] = [
 function Index() {
   const [floorId, setFloorId] = useState(FLOORS[0].id);
   const floor = useMemo(() => FLOORS.find((f) => f.id === floorId)!, [floorId]);
+  const [demo, setDemo] = useState(false);
+
+  const toggleDemo = () => {
+    const next = !demo;
+    setDemo(next);
+    try {
+      if (next && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      } else if (!next && document.fullscreenElement) {
+        document.exitFullscreen?.();
+      }
+    } catch {
+      /* ignore */
+    }
+  };
 
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-background text-foreground font-sans antialiased">
@@ -258,17 +275,31 @@ function Index() {
         <div className="absolute -bottom-32 left-1/3 size-[480px] rounded-full bg-magenta/20 blur-[120px]" />
       </div>
 
-      <Header />
+      {!demo && <Header />}
       <div className="flex flex-1 min-h-0">
-        <FloorSidebar floorId={floorId} onSelect={setFloorId} />
-        <main className="flex-1 min-w-0 px-4 lg:px-6 py-4 overflow-hidden">
-          <div className="grid grid-cols-3 gap-4 h-full min-h-0">
+        {!demo && <FloorSidebar floorId={floorId} onSelect={setFloorId} />}
+        <main
+          className={`flex-1 min-w-0 overflow-hidden ${
+            demo ? "p-3" : "px-4 lg:px-6 py-4"
+          }`}
+        >
+          <div className={`grid grid-cols-3 h-full min-h-0 ${demo ? "gap-3" : "gap-4"}`}>
             <DigitalTwinCard floor={floor} />
             <IntakeCard floor={floor} />
             <WorkflowCard floor={floor} />
           </div>
         </main>
       </div>
+
+      <button
+        onClick={toggleDemo}
+        className="fixed bottom-4 right-4 z-40 size-10 rounded-full grid place-items-center text-primary-foreground shadow-lg shadow-primary/40 hover:opacity-90 transition-opacity"
+        style={{ background: "var(--gradient-aurora)" }}
+        aria-label={demo ? "Exit demo mode" : "Enter demo mode"}
+        title={demo ? "Exit demo mode" : "Fullscreen demo mode"}
+      >
+        {demo ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+      </button>
     </div>
   );
 }
