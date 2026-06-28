@@ -1859,7 +1859,19 @@ function WorkflowCard({
 
   // Animate execution progress after dispatch
   const [progress, setProgress] = useState(0);
+  const [simStartedAt, setSimStartedAt] = useState<number | null>(null);
   useEffect(() => {
+    // Simulation mode — linear progress to 100 over 60 s
+    if (simStartedAt) {
+      setProgress(0);
+      const id = window.setInterval(() => {
+        const elapsed = Date.now() - simStartedAt;
+        const pct = Math.min(100, Math.round((elapsed / 60000) * 100));
+        setProgress(pct);
+        if (pct >= 100) window.clearInterval(id);
+      }, 250);
+      return () => window.clearInterval(id);
+    }
     if (!dispatchedAt) {
       setProgress(0);
       return;
@@ -1872,7 +1884,42 @@ function WorkflowCard({
       });
     }, 600);
     return () => window.clearInterval(id);
-  }, [dispatchedAt]);
+  }, [dispatchedAt, simStartedAt]);
+
+  // Reset simulation when scenario changes
+  useEffect(() => {
+    setSimStartedAt(null);
+  }, [focus?.id]);
+
+  const runSimulation = () => {
+    if (!focus) return;
+    setApproved(true);
+    if (!dispatchedAt) onDispatch(SYSTEM_META[focus.system].label, winner.name);
+    setSimStartedAt(Date.now());
+    const sys = focus.system;
+    const fire = (ms: number, fn: () => void) => window.setTimeout(fn, ms);
+    toast("AI simulation started", {
+      description: "Running end-to-end workflow · ~60 seconds",
+      duration: 3500,
+    });
+    if (sys === "lockout") {
+      fire(8000,  () => toast("Voice agent online", { description: "Calming the tenant · 4 guided steps pushed." }));
+      fire(18000, () => toast("Landlord on the call", { description: "Mette Holm picked up in 1 min 42 s." }));
+      fire(32000, () => toast.success("Digital key renewed", { description: "12-month Pro plan auto-provisioned (890 DKK)." }));
+      fire(46000, () => toast("Door A1 unlocking…", { description: "Mobile + NFC key delivered to tenant phone." }));
+      fire(58000, () => toast.success("Tenant inside · case closed", { description: "Audit log filed. Resolution time 1m 02s." }));
+    } else if (sys === "roof") {
+      fire(7000,  () => toast("Containment pushed", { description: "Boardroom evacuated · drip trays deployed." }));
+      fire(16000, () => toast("Stakeholders alerted", { description: "Facility, Tryg insurance, tenants, 3 roofers." }));
+      fire(28000, () => toast("Tag & Tæt A/S accepted", { description: "ETA 55 min · OEM membrane on truck." }));
+      fire(42000, () => toast.success("Insurance claim filed", { description: "Tryg case #CL-44218 · photos attached." }));
+      fire(58000, () => toast.success("Crew on site · sealing leak", { description: "Live tracking · ETA repair complete 16:20." }));
+    } else {
+      fire(15000, () => toast(`${winner.name} accepted`, { description: "Job confirmed · technician dispatched." }));
+      fire(35000, () => toast("Tenant notified", { description: "SMS + dashboard ping sent." }));
+      fire(55000, () => toast.success("Technician on site", { description: "Live tracking enabled." }));
+    }
+  };
 
   // Step status driven by progress
   const stepCount = playbook.steps.length;
