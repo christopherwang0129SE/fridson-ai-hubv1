@@ -275,6 +275,26 @@ function Index() {
   const [alerts, setAlerts] = useState<SensorAlert[]>([]);
   const pushAlert = (a: SensorAlert) =>
     setAlerts((prev) => [a, ...prev].slice(0, 6));
+  const [dispatchedAt, setDispatchedAt] = useState<number | null>(null);
+  const dispatchWorkflow = (label: string, vendorName: string) => {
+    setDispatchedAt(Date.now());
+    toast.success("Workflow dispatched", {
+      description: `${label} → ${vendorName} accepted the job.`,
+      duration: 4000,
+    });
+    window.setTimeout(() => {
+      toast("Tenant notified", {
+        description: "SMS + dashboard ping sent to floor occupants.",
+        duration: 4000,
+      });
+    }, 1400);
+    window.setTimeout(() => {
+      toast("Technician en route", {
+        description: `${vendorName} ETA updated. Live tracking enabled.`,
+        duration: 4000,
+      });
+    }, 3200);
+  };
 
   const toggleDemo = () => {
     const next = !demo;
@@ -313,10 +333,10 @@ function Index() {
               <div className="flex-1 min-w-0"><DigitalTwinCard floor={floor} /></div>
             </div>
             <div data-tour="intake" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} /></div>
+              <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} onDispatch={dispatchWorkflow} /></div>
             </div>
             <div data-tour="workflow" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} /></div>
+              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} /></div>
             </div>
           </div>
         </main>
