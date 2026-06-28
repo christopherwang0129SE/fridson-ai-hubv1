@@ -359,16 +359,14 @@ function Index() {
             demo ? "p-3" : "px-4 lg:px-6 py-4"
           }`}
         >
-          <div className={`grid grid-cols-3 h-full min-h-0 ${demo ? "gap-3" : "gap-4"}`}>
+          <div className={`grid grid-cols-4 h-full min-h-0 ${demo ? "gap-2" : "gap-3"}`}>
             <div data-tour="twin" className="min-h-0 min-w-0 flex">
               <div className="flex-1 min-w-0"><DigitalTwinCard floor={floor} /></div>
             </div>
             <div data-tour="intake" className="min-h-0 min-w-0 flex">
               <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} onDispatch={dispatchWorkflow} /></div>
             </div>
-            <div data-tour="workflow" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} onDispatch={dispatchWorkflow} /></div>
-            </div>
+            <WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} onDispatch={dispatchWorkflow} />
           </div>
         </main>
       </div>
