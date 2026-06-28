@@ -2155,6 +2155,16 @@ function WorkflowCard({
 
       {/* Approval + outcome */}
       <div className="mt-auto space-y-2">
+        <button
+          onClick={runSimulation}
+          className="w-full h-8 rounded-md text-[11px] font-medium border border-accent/50 text-accent hover:bg-accent/10 inline-flex items-center justify-center gap-1.5"
+          title="Auto-runs the full AI workflow with live toasts (~60 s)"
+        >
+          <Sparkles className="size-3" />
+          {simStartedAt && progress < 100
+            ? `Simulating · ${progress}%`
+            : "▶ Run AI workflow simulation · 60 s"}
+        </button>
         {!approved ? (
           <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
             <div className="flex items-start gap-2">
