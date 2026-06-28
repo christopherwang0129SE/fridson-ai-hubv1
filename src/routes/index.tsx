@@ -2051,21 +2051,156 @@ function WorkflowCard({
         </ol>
       </div>
 
-      <div className="mt-auto rounded-lg border border-warning/30 bg-warning/10 p-3 flex items-start gap-3">
-        <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
-        <div className="text-xs text-muted-foreground leading-relaxed">
-          <span className="text-foreground font-medium">
-            {dispatchedAt ? "Dispatched · live tracking" : "Approval pending."}
-          </span>{" "}
-          {dispatchedAt
-            ? `${winner.name} on the way. Push notifications sent.`
-            : `${winner.name} dispatches in `}
-          {!dispatchedAt && (
-            <span className="font-mono text-warning">02:14</span>
-          )}
-          {!dispatchedAt && " if no override."}
-        </div>
+      {/* Approval + outcome */}
+      <div className="mt-auto space-y-2">
+        {!approved ? (
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
+              <div className="text-xs text-muted-foreground leading-relaxed flex-1">
+                <span className="text-foreground font-medium">Approval pending.</span>{" "}
+                Dispatch <span className="text-foreground">{winner.name}</span> ·{" "}
+                <span className="font-mono">{winner.eta}</span> ·{" "}
+                <span className="font-mono">{winner.price}</span>
+              </div>
+            </div>
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              <button
+                onClick={approveAndCall}
+                className="h-9 rounded-md text-xs font-semibold inline-flex items-center justify-center gap-1.5 text-primary-foreground shadow-md shadow-primary/30 hover:opacity-90"
+                style={{ background: "var(--gradient-aurora)" }}
+              >
+                <Phone className="size-3.5" />
+                Yes · approve & call
+              </button>
+              <button
+                className="h-9 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground"
+                onClick={() => toast("Override sent", { description: "AI will re-bid the job." })}
+              >
+                No · re-bid
+              </button>
+            </div>
+          </div>
+        ) : (
+          <ScenarioOutcome system={focus?.system ?? "lockout"} winner={winner} />
+        )}
       </div>
     </CardShell>
+  );
+}
+
+// ---------------- Scenario-specific outcome ----------------
+
+function ScenarioOutcome({
+  system,
+  winner,
+}: {
+  system: SystemKey;
+  winner: VendorSet["vendors"][number];
+}) {
+  if (system === "lockout") {
+    return (
+      <div
+        className="rounded-lg border border-success/40 p-3"
+        style={{
+          background:
+            "linear-gradient(135deg, color-mix(in oklch, var(--success) 16%, transparent), transparent)",
+        }}
+      >
+        <div className="flex items-center gap-2 text-success text-[10px] font-mono uppercase tracking-widest">
+          <ShieldCheck className="size-3" />
+          Digital key renewed online
+        </div>
+        <div className="mt-2 text-xs leading-relaxed">
+          <span className="font-semibold">Tenant #214</span> · Door A1 ·{" "}
+          <span className="text-success">12-month plan auto-provisioned</span>
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-1.5 text-[10px] font-mono">
+          <Tag label="Plan" value="Pro 12m" tone="success" />
+          <Tag label="Charge" value="890 DKK" tone="info" />
+          <Tag label="Key" value="Mobile + NFC" tone="info" />
+        </div>
+        <div className="mt-2.5 flex items-center gap-2">
+          <a
+            href={`tel:${winner.phone}`}
+            className="flex-1 h-8 rounded-md text-[11px] font-medium inline-flex items-center justify-center gap-1.5 text-primary-foreground"
+            style={{ background: "var(--gradient-aurora)" }}
+          >
+            <Phone className="size-3" />
+            Call {winner.name}
+          </a>
+          <a
+            href="#"
+            className="flex-1 h-8 rounded-md text-[11px] font-medium inline-flex items-center justify-center gap-1.5 border border-border hover:text-foreground text-muted-foreground"
+          >
+            <ExternalLink className="size-3" />
+            Open key portal
+          </a>
+        </div>
+      </div>
+    );
+  }
+  if (system === "roof") {
+    const stakeholders = [
+      { who: "Facility manager", how: "SMS + call", icon: <Phone className="size-3" />, action: "tel:+4530112233", label: "Call" },
+      { who: "Insurance (Tryg)", how: "Claim filed", icon: <FileText className="size-3" />, action: "#", label: "Open claim" },
+      { who: "Boardroom tenants", how: "Email + push", icon: <Mail className="size-3" />, action: "mailto:tenants@nordhavn.dk", label: "Email" },
+      { who: "Roofer · Tag & Tæt", how: "Dispatched", icon: <MessageSquare className="size-3" />, action: `tel:${winner.phone}`, label: "Call" },
+    ];
+    return (
+      <div
+        className="rounded-lg border border-destructive/40 p-3"
+        style={{
+          background:
+            "linear-gradient(135deg, color-mix(in oklch, var(--destructive) 14%, transparent), transparent)",
+        }}
+      >
+        <div className="flex items-center gap-2 text-destructive text-[10px] font-mono uppercase tracking-widest">
+          <CloudRain className="size-3" />
+          Emergency comms sent · 4 stakeholders
+        </div>
+        <ul className="mt-2 space-y-1.5">
+          {stakeholders.map((s) => (
+            <li
+              key={s.who}
+              className="flex items-center justify-between gap-2 rounded-md border border-border bg-background/40 px-2 py-1.5"
+            >
+              <div className="min-w-0">
+                <div className="text-xs font-medium truncate">{s.who}</div>
+                <div className="text-[10px] font-mono text-muted-foreground">{s.how}</div>
+              </div>
+              <a
+                href={s.action}
+                className="h-7 px-2 rounded-md text-[10px] font-medium inline-flex items-center gap-1 text-primary-foreground shrink-0"
+                style={{ background: "var(--gradient-aurora)" }}
+              >
+                {s.icon}
+                {s.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  // Generic outcome for other systems
+  return (
+    <div className="rounded-lg border border-success/40 bg-success/10 p-3 flex items-start gap-2">
+      <CheckCircle2 className="size-4 text-success shrink-0 mt-0.5" />
+      <div className="text-xs leading-relaxed flex-1">
+        <span className="font-semibold">Dispatched.</span> {winner.name} on the way ·{" "}
+        <span className="font-mono">{winner.eta}</span>
+        <div className="mt-2">
+          <a
+            href={`tel:${winner.phone}`}
+            className="h-8 px-3 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5 text-primary-foreground"
+            style={{ background: "var(--gradient-aurora)" }}
+          >
+            <Phone className="size-3" />
+            Call {winner.name}
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }
