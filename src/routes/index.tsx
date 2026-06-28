@@ -61,6 +61,16 @@ export const Route = createFileRoute("/")({
 
 type SystemKey = "hvac" | "coffee" | "fridge" | "office" | "lighting" | "plumbing";
 
+type SensorAlert = {
+  id: string;
+  metric: string;
+  asset: string;
+  value: string;
+  threshold: string;
+  severity: "warning" | "critical";
+  at: number;
+};
+
 const SYSTEM_META: Record<
   SystemKey,
   { label: string; icon: React.ReactNode; color: string; tint: string }
