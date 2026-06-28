@@ -68,7 +68,14 @@ export const Route = createFileRoute("/")({
 
 // ---------------- Floors & systems ----------------
 
-type SystemKey = "hvac" | "coffee" | "fridge" | "office" | "lighting" | "plumbing";
+type SystemKey =
+  | "lockout"
+  | "roof"
+  | "coffee"
+  | "fridge"
+  | "office"
+  | "lighting"
+  | "plumbing";
 
 type SensorAlert = {
   id: string;
@@ -84,7 +91,18 @@ const SYSTEM_META: Record<
   SystemKey,
   { label: string; icon: React.ReactNode; color: string; tint: string }
 > = {
-  hvac: { label: "HVAC", icon: <Wind className="size-3.5" />, color: "bg-info", tint: "text-info" },
+  lockout: {
+    label: "Lockout / Access",
+    icon: <KeyRound className="size-3.5" />,
+    color: "bg-info",
+    tint: "text-info",
+  },
+  roof: {
+    label: "Roof / Water ingress",
+    icon: <CloudRain className="size-3.5" />,
+    color: "bg-destructive",
+    tint: "text-destructive",
+  },
   coffee: {
     label: "Coffee machine",
     icon: <Coffee className="size-3.5" />,
