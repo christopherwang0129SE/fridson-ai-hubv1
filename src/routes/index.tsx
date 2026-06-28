@@ -1090,7 +1090,7 @@ function IntakeCard({
     <CardShell
       index="02 · Report"
       title="AI Intake"
-      subtitle="Voice, camera, sensor or QR — one agent."
+      subtitle="Voice or photo · one tap."
       icon={<Sparkles className="size-4" />}
       accent="primary"
     >
