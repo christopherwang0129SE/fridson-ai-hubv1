@@ -1410,18 +1410,17 @@ function SensorPanel({
 }) {
   const [t, setT] = useState(0);
   const [settings, setSettings] = useState(false);
-  const [thresholds, setThresholds] = useState<Record<MetricKey, number>>({
-    temp: METRICS.temp.defaultThreshold,
-    vibration: METRICS.vibration.defaultThreshold,
-    co2: METRICS.co2.defaultThreshold,
-    power: METRICS.power.defaultThreshold,
-  });
-  const lastFiredRef = useRef<Record<MetricKey, number>>({
-    temp: 0,
-    vibration: 0,
-    co2: 0,
-    power: 0,
-  });
+  const [thresholds, setThresholds] = useState<Record<MetricKey, number>>(
+    () =>
+      Object.fromEntries(
+        (Object.keys(METRICS) as MetricKey[]).map((k) => [k, METRICS[k].defaultThreshold]),
+      ) as Record<MetricKey, number>,
+  );
+  const lastFiredRef = useRef<Record<MetricKey, number>>(
+    Object.fromEntries(
+      (Object.keys(METRICS) as MetricKey[]).map((k) => [k, 0]),
+    ) as Record<MetricKey, number>,
+  );
 
   useEffect(() => {
     const id = window.setInterval(() => setT((x) => x + 1), 1200);
