@@ -32,6 +32,8 @@ import {
   Thermometer,
   Gauge,
   CircleDot,
+  SlidersHorizontal,
+  Zap,
 } from "lucide-react";
 import floorPlan from "@/assets/floor-plan.jpg";
 
@@ -58,6 +60,16 @@ export const Route = createFileRoute("/")({
 // ---------------- Floors & systems ----------------
 
 type SystemKey = "hvac" | "coffee" | "fridge" | "office" | "lighting" | "plumbing";
+
+type SensorAlert = {
+  id: string;
+  metric: string;
+  asset: string;
+  value: string;
+  threshold: string;
+  severity: "warning" | "critical";
+  at: number;
+};
 
 const SYSTEM_META: Record<
   SystemKey,
@@ -259,6 +271,9 @@ function Index() {
   const floor = useMemo(() => FLOORS.find((f) => f.id === floorId)!, [floorId]);
   const [demo, setDemo] = useState(false);
   const [tour, setTour] = useState(false);
+  const [alerts, setAlerts] = useState<SensorAlert[]>([]);
+  const pushAlert = (a: SensorAlert) =>
+    setAlerts((prev) => [a, ...prev].slice(0, 6));
 
   const toggleDemo = () => {
     const next = !demo;
@@ -297,10 +312,10 @@ function Index() {
               <div className="flex-1 min-w-0"><DigitalTwinCard floor={floor} /></div>
             </div>
             <div data-tour="intake" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><IntakeCard floor={floor} /></div>
+              <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} /></div>
             </div>
             <div data-tour="workflow" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} /></div>
+              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} /></div>
             </div>
           </div>
         </main>
@@ -861,7 +876,13 @@ function MiniStat({
 
 type IntakeMode = "voice" | "camera" | "sensor" | "qr";
 
-function IntakeCard({ floor }: { floor: Floor }) {
+function IntakeCard({
+  floor,
+  onAlert,
+}: {
+  floor: Floor;
+  onAlert: (a: SensorAlert) => void;
+}) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
     floor.hotspots.find((h) => h.status === "warning") ??
@@ -1161,7 +1182,7 @@ function IntakeCard({ floor }: { floor: Floor }) {
         )}
 
         {mode === "sensor" && (
-          <SensorPanel focusLabel={focus?.label ?? "—"} />
+          <SensorPanel focusLabel={focus?.label ?? "—"} onAlert={onAlert} />
         )}
 
         {mode === "qr" && (
@@ -1224,65 +1245,251 @@ function IntakeCard({ floor }: { floor: Floor }) {
   );
 }
 
-function SensorPanel({ focusLabel }: { focusLabel: string }) {
+type MetricKey = "temp" | "vibration" | "co2" | "power";
+
+const METRICS: Record<
+  MetricKey,
+  {
+    label: string;
+    unit: string;
+    icon: React.ReactNode;
+    tone: string;
+    base: number;
+    amp: number;
+    period: number;
+    decimals: number;
+    defaultThreshold: number;
+    min: number;
+    max: number;
+    step: number;
+  }
+> = {
+  temp: {
+    label: "Temp",
+    unit: "°C",
+    icon: <Thermometer className="size-3.5" />,
+    tone: "text-info",
+    base: 22.4,
+    amp: 0.6,
+    period: 3,
+    decimals: 1,
+    defaultThreshold: 23.0,
+    min: 18,
+    max: 30,
+    step: 0.1,
+  },
+  vibration: {
+    label: "Vibration",
+    unit: "g",
+    icon: <Gauge className="size-3.5" />,
+    tone: "text-warning",
+    base: 0.42,
+    amp: 0.18,
+    period: 1,
+    decimals: 2,
+    defaultThreshold: 0.55,
+    min: 0.1,
+    max: 1.0,
+    step: 0.01,
+  },
+  co2: {
+    label: "CO₂",
+    unit: "ppm",
+    icon: <CircleDot className="size-3.5" />,
+    tone: "text-lime",
+    base: 540,
+    amp: 40,
+    period: 2,
+    decimals: 0,
+    defaultThreshold: 570,
+    min: 400,
+    max: 1200,
+    step: 10,
+  },
+  power: {
+    label: "Power",
+    unit: "kW",
+    icon: <Zap className="size-3.5" />,
+    tone: "text-magenta",
+    base: 1.84,
+    amp: 0.2,
+    period: 4,
+    decimals: 2,
+    defaultThreshold: 2.0,
+    min: 0.5,
+    max: 5.0,
+    step: 0.05,
+  },
+};
+
+function sample(m: (typeof METRICS)[MetricKey], t: number) {
+  const wave =
+    m === METRICS.vibration ? Math.abs(Math.sin(t)) : Math.sin(t / m.period);
+  return m.base + wave * m.amp;
+}
+
+function SensorPanel({
+  focusLabel,
+  onAlert,
+}: {
+  focusLabel: string;
+  onAlert: (a: SensorAlert) => void;
+}) {
   const [t, setT] = useState(0);
+  const [settings, setSettings] = useState(false);
+  const [thresholds, setThresholds] = useState<Record<MetricKey, number>>({
+    temp: METRICS.temp.defaultThreshold,
+    vibration: METRICS.vibration.defaultThreshold,
+    co2: METRICS.co2.defaultThreshold,
+    power: METRICS.power.defaultThreshold,
+  });
+  const lastFiredRef = useRef<Record<MetricKey, number>>({
+    temp: 0,
+    vibration: 0,
+    co2: 0,
+    power: 0,
+  });
+
   useEffect(() => {
     const id = window.setInterval(() => setT((x) => x + 1), 1200);
     return () => window.clearInterval(id);
   }, []);
-  const readings = [
-    {
-      icon: <Thermometer className="size-3.5" />,
-      label: "Temp",
-      value: `${(22.4 + Math.sin(t / 3) * 0.6).toFixed(1)}°C`,
-      tone: "text-info",
-    },
-    {
-      icon: <Gauge className="size-3.5" />,
-      label: "Vibration",
-      value: `${(0.42 + Math.abs(Math.sin(t)) * 0.18).toFixed(2)} g`,
-      tone: "text-warning",
-    },
-    {
-      icon: <CircleDot className="size-3.5" />,
-      label: "CO₂",
-      value: `${Math.round(540 + Math.sin(t / 2) * 40)} ppm`,
-      tone: "text-lime",
-    },
-    {
-      icon: <Activity className="size-3.5" />,
-      label: "Power",
-      value: `${(1.84 + Math.sin(t / 4) * 0.2).toFixed(2)} kW`,
-      tone: "text-magenta",
-    },
-  ];
+
+  const keys = Object.keys(METRICS) as MetricKey[];
+  const readings = keys.map((k) => {
+    const m = METRICS[k];
+    const value = sample(m, t);
+    const threshold = thresholds[k];
+    const exceeded = value > threshold;
+    const severity: "warning" | "critical" =
+      value > threshold * 1.08 ? "critical" : "warning";
+    return { k, m, value, threshold, exceeded, severity };
+  });
+
+  // Fire alerts on threshold breach (debounced per metric)
+  useEffect(() => {
+    const now = Date.now();
+    readings.forEach((r) => {
+      if (!r.exceeded) return;
+      const last = lastFiredRef.current[r.k];
+      if (now - last < 8000) return;
+      lastFiredRef.current[r.k] = now;
+      onAlert({
+        id: `${r.k}-${now}`,
+        metric: r.m.label,
+        asset: focusLabel,
+        value: `${r.value.toFixed(r.m.decimals)} ${r.m.unit}`,
+        threshold: `${r.threshold.toFixed(r.m.decimals)} ${r.m.unit}`,
+        severity: r.severity,
+        at: now,
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
           Live sensor feed
         </div>
-        <span className="text-[10px] font-mono text-success flex items-center gap-1">
-          <span className="size-1.5 rounded-full bg-success animate-pulse" />
-          {focusLabel}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-success flex items-center gap-1">
+            <span className="size-1.5 rounded-full bg-success animate-pulse" />
+            {focusLabel}
+          </span>
+          <button
+            onClick={() => setSettings((s) => !s)}
+            className={`size-5 rounded grid place-items-center transition-colors ${
+              settings
+                ? "bg-primary/20 text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            aria-label="Configure thresholds"
+            title="Configure thresholds"
+          >
+            <SlidersHorizontal className="size-3" />
+          </button>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
         {readings.map((r) => (
           <div
-            key={r.label}
-            className="rounded-md border border-border bg-background/50 px-3 py-2"
+            key={r.k}
+            className={`rounded-md border px-3 py-2 transition-colors ${
+              r.exceeded
+                ? r.severity === "critical"
+                  ? "border-destructive/50 bg-destructive/10"
+                  : "border-warning/50 bg-warning/10"
+                : "border-border bg-background/50"
+            }`}
           >
-            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              {r.icon}
-              {r.label}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                {r.m.icon}
+                {r.m.label}
+              </div>
+              {r.exceeded && (
+                <AlertTriangle
+                  className={`size-3 ${
+                    r.severity === "critical" ? "text-destructive" : "text-warning"
+                  }`}
+                />
+              )}
             </div>
-            <div className={`text-base font-semibold font-mono mt-0.5 ${r.tone}`}>
-              {r.value}
+            <div
+              className={`text-base font-semibold font-mono mt-0.5 ${
+                r.exceeded
+                  ? r.severity === "critical"
+                    ? "text-destructive"
+                    : "text-warning"
+                  : r.m.tone
+              }`}
+            >
+              {r.value.toFixed(r.m.decimals)} {r.m.unit}
+            </div>
+            <div className="text-[9px] font-mono text-muted-foreground mt-0.5">
+              limit {r.threshold.toFixed(r.m.decimals)} {r.m.unit}
             </div>
           </div>
         ))}
       </div>
+
+      {settings && (
+        <div className="mt-3 rounded-md border border-border bg-background/50 p-3 space-y-2">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            Alert thresholds
+          </div>
+          {keys.map((k) => {
+            const m = METRICS[k];
+            return (
+              <div key={k} className="flex items-center gap-2 text-xs">
+                <span className="w-20 flex items-center gap-1 text-muted-foreground">
+                  {m.icon}
+                  {m.label}
+                </span>
+                <input
+                  type="range"
+                  min={m.min}
+                  max={m.max}
+                  step={m.step}
+                  value={thresholds[k]}
+                  onChange={(e) =>
+                    setThresholds((prev) => ({
+                      ...prev,
+                      [k]: Number(e.target.value),
+                    }))
+                  }
+                  className="flex-1 accent-primary"
+                />
+                <span className="w-16 text-right font-mono tabular-nums text-foreground">
+                  {thresholds[k].toFixed(m.decimals)} {m.unit}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1410,7 +1617,7 @@ function genericSteps(vendor: string, asset: string) {
   ];
 }
 
-function WorkflowCard({ floor }: { floor: Floor }) {
+function WorkflowCard({ floor, alerts }: { floor: Floor; alerts: SensorAlert[] }) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
     floor.hotspots.find((h) => h.status === "warning") ??
@@ -1428,6 +1635,66 @@ function WorkflowCard({ floor }: { floor: Floor }) {
       icon={<Wrench className="size-4" />}
       accent="magenta"
     >
+      {/* Potential failure alerts */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            <AlertTriangle className="size-3" />
+            Potential failures
+          </div>
+          {alerts.length > 0 && (
+            <span className="text-[10px] font-mono text-warning flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-warning animate-pulse" />
+              {alerts.length}
+            </span>
+          )}
+        </div>
+        {alerts.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border bg-secondary/20 px-3 py-3 text-[11px] font-mono text-muted-foreground text-center">
+            No threshold breaches.
+          </div>
+        ) : (
+          <ol className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+            {alerts.map((a) => (
+              <li
+                key={a.id}
+                className={`rounded-md border px-2.5 py-1.5 flex items-center justify-between gap-2 text-[11px] ${
+                  a.severity === "critical"
+                    ? "border-destructive/40 bg-destructive/10"
+                    : "border-warning/40 bg-warning/10"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`size-1.5 rounded-full shrink-0 ${
+                      a.severity === "critical" ? "bg-destructive" : "bg-warning"
+                    }`}
+                  />
+                  <span className="font-medium truncate">
+                    {a.metric} · {a.asset}
+                  </span>
+                </div>
+                <span
+                  className={`font-mono tabular-nums shrink-0 ${
+                    a.severity === "critical" ? "text-destructive" : "text-warning"
+                  }`}
+                >
+                  {a.value}
+                  <span className="text-muted-foreground"> / {a.threshold}</span>
+                </span>
+                <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                  {new Date(a.at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  })}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
       {/* Winning vendor — hero */}
       <div
         className="rounded-lg border border-magenta/50 p-3 shadow-lg shadow-magenta/10"
