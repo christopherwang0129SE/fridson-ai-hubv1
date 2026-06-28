@@ -1995,6 +1995,36 @@ function WorkflowCard({
         )}
       </div>
 
+      {/* AI-generated guidance for the person on the ground */}
+      {focus && AI_GUIDANCE[focus.system] && (
+        <div
+          className="rounded-lg border border-accent/40 p-2.5"
+          style={{
+            background:
+              "linear-gradient(135deg, color-mix(in oklch, var(--accent) 14%, transparent), transparent)",
+          }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-accent">
+              <Sparkles className="size-3" />
+              AI action plan
+            </div>
+            <span className="text-[9px] font-mono text-muted-foreground">auto-generated</span>
+          </div>
+          <div className="text-xs font-medium mb-1.5">{AI_GUIDANCE[focus.system]!.title}</div>
+          <ol className="space-y-1 text-[11px] leading-relaxed">
+            {AI_GUIDANCE[focus.system]!.steps.map((s, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="size-4 shrink-0 rounded-full grid place-items-center text-[9px] font-mono bg-accent/30 text-accent">
+                  {i + 1}
+                </span>
+                <span className="text-foreground/90">{s}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       {/* Bidder leaderboard */}
       <div>
         <div className="flex items-center justify-between mb-2">
