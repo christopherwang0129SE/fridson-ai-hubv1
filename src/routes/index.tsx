@@ -1417,92 +1417,71 @@ function WorkflowCard({ floor }: { floor: Floor }) {
     floor.hotspots[0];
 
   const playbook = focus ? VENDOR_PLAYBOOK[focus.system] : VENDOR_PLAYBOOK.hvac;
+  const winner = playbook.vendors.find((v) => v.selected) ?? playbook.vendors[0];
+  const others = playbook.vendors.filter((v) => v !== winner);
 
   return (
     <CardShell
       index="03 · Act"
       title="Action Workflow"
-      subtitle={`AI brokers the best vendor for ${playbook.service.toLowerCase()}`}
+      subtitle={`AI-brokered ${playbook.service.toLowerCase()}`}
       icon={<Wrench className="size-4" />}
       accent="magenta"
     >
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            Vendor Bidding · Live
+      {/* Winning vendor — hero */}
+      <div
+        className="rounded-lg border border-magenta/50 p-3 shadow-lg shadow-magenta/10"
+        style={{
+          background:
+            "linear-gradient(135deg, color-mix(in oklch, var(--magenta) 14%, transparent), transparent)",
+        }}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <ChevronRight className="size-4 text-magenta shrink-0" />
+            <span className="text-sm font-medium truncate">{winner.name}</span>
           </div>
-          <div className="text-[10px] font-mono text-success flex items-center gap-1">
-            <span className="size-1.5 rounded-full bg-success animate-pulse" />
-            {playbook.vendors.length} bids
-          </div>
+          <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-magenta text-background">
+            Selected
+          </span>
         </div>
-        <div className="space-y-2">
-          {playbook.vendors.map((v) => (
-            <div
-              key={v.name}
-              className={`rounded-lg border p-3 transition-colors ${
-                v.selected
-                  ? "border-magenta/50 bg-magenta/10 shadow-lg shadow-magenta/10"
-                  : "border-border bg-secondary/30"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm font-medium truncate">{v.name}</span>
-                  {v.badge && (
-                    <span
-                      className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                        v.selected
-                          ? "bg-magenta text-background"
-                          : "bg-secondary text-muted-foreground"
-                      }`}
-                    >
-                      {v.badge}
-                    </span>
-                  )}
-                </div>
-                {v.selected && <ChevronRight className="size-4 text-magenta shrink-0" />}
-              </div>
-              <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] font-mono">
-                <span className="flex items-center gap-1 text-info">
-                  <Clock className="size-3" /> {v.eta}
-                </span>
-                <span className="flex items-center gap-1 text-lime">
-                  <DollarSign className="size-3" /> {v.price}
-                </span>
-                <span className="flex items-center gap-1 text-warning">
-                  <Star className="size-3" /> {v.rating}
-                </span>
-              </div>
-            </div>
-          ))}
+        <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] font-mono">
+          <span className="flex items-center gap-1 text-info">
+            <Clock className="size-3" /> {winner.eta}
+          </span>
+          <span className="flex items-center gap-1 text-lime">
+            <DollarSign className="size-3" /> {winner.price}
+          </span>
+          <span className="flex items-center gap-1 text-warning">
+            <Star className="size-3" /> {winner.rating}
+          </span>
+        </div>
+        <div className="mt-2 text-[10px] font-mono text-muted-foreground">
+          beats {others.length} other bids on reliability × cost × ETA
         </div>
       </div>
 
       <div>
-        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3">
-          Execution Plan
+        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
+          Execution
         </div>
-        <ol className="relative space-y-3 pl-6 before:content-[''] before:absolute before:left-[9px] before:top-1 before:bottom-1 before:w-px before:bg-border">
+        <ol className="relative space-y-2.5 pl-5 before:content-[''] before:absolute before:left-[7px] before:top-1 before:bottom-1 before:w-px before:bg-border">
           {playbook.steps.map((s) => {
             const color =
               s.status === "done"
                 ? "bg-success text-background"
                 : s.status === "active"
-                  ? "bg-magenta text-background"
+                  ? "bg-magenta text-background animate-pulse"
                   : "bg-secondary text-muted-foreground";
             return (
               <li key={s.title} className="relative">
                 <span
-                  className={`absolute -left-6 top-0.5 size-[18px] rounded-full grid place-items-center ${color}`}
-                >
-                  {s.icon}
-                </span>
+                  className={`absolute -left-5 top-1 size-[14px] rounded-full ${color}`}
+                />
                 <div className="flex items-baseline justify-between gap-2">
-                  <div className="text-sm font-medium">{s.title}</div>
+                  <div className="text-xs font-medium">{s.title}</div>
                   <div className="text-[10px] font-mono text-muted-foreground">{s.time}</div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">{s.detail}</div>
               </li>
             );
           })}
@@ -1513,7 +1492,7 @@ function WorkflowCard({ floor }: { floor: Floor }) {
         <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
         <div className="text-xs text-muted-foreground leading-relaxed">
           <span className="text-foreground font-medium">Approval pending.</span>{" "}
-          {playbook.vendors[0].name} will be auto-dispatched in{" "}
+          {winner.name} dispatches in{" "}
           <span className="font-mono text-warning">02:14</span> if no override.
         </div>
       </div>
