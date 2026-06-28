@@ -900,9 +900,11 @@ type IntakeMode = "voice" | "camera" | "sensor" | "qr";
 function IntakeCard({
   floor,
   onAlert,
+  onDispatch,
 }: {
   floor: Floor;
   onAlert: (a: SensorAlert) => void;
+  onDispatch: (label: string, vendorName: string) => void;
 }) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
