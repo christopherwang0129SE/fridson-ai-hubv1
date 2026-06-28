@@ -1617,7 +1617,7 @@ function genericSteps(vendor: string, asset: string) {
   ];
 }
 
-function WorkflowCard({ floor }: { floor: Floor }) {
+function WorkflowCard({ floor, alerts }: { floor: Floor; alerts: SensorAlert[] }) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
     floor.hotspots.find((h) => h.status === "warning") ??
@@ -1635,6 +1635,66 @@ function WorkflowCard({ floor }: { floor: Floor }) {
       icon={<Wrench className="size-4" />}
       accent="magenta"
     >
+      {/* Potential failure alerts */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            <AlertTriangle className="size-3" />
+            Potential failures
+          </div>
+          {alerts.length > 0 && (
+            <span className="text-[10px] font-mono text-warning flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-warning animate-pulse" />
+              {alerts.length}
+            </span>
+          )}
+        </div>
+        {alerts.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border bg-secondary/20 px-3 py-3 text-[11px] font-mono text-muted-foreground text-center">
+            No threshold breaches.
+          </div>
+        ) : (
+          <ol className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+            {alerts.map((a) => (
+              <li
+                key={a.id}
+                className={`rounded-md border px-2.5 py-1.5 flex items-center justify-between gap-2 text-[11px] ${
+                  a.severity === "critical"
+                    ? "border-destructive/40 bg-destructive/10"
+                    : "border-warning/40 bg-warning/10"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`size-1.5 rounded-full shrink-0 ${
+                      a.severity === "critical" ? "bg-destructive" : "bg-warning"
+                    }`}
+                  />
+                  <span className="font-medium truncate">
+                    {a.metric} · {a.asset}
+                  </span>
+                </div>
+                <span
+                  className={`font-mono tabular-nums shrink-0 ${
+                    a.severity === "critical" ? "text-destructive" : "text-warning"
+                  }`}
+                >
+                  {a.value}
+                  <span className="text-muted-foreground"> / {a.threshold}</span>
+                </span>
+                <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                  {new Date(a.at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  })}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
       {/* Winning vendor — hero */}
       <div
         className="rounded-lg border border-magenta/50 p-3 shadow-lg shadow-magenta/10"
