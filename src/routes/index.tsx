@@ -1686,11 +1686,11 @@ type VendorSet = {
 
 const VENDOR_PLAYBOOK: Record<SystemKey, VendorSet> = {
   lockout: {
-    service: "Lockout & digital access",
+    service: "Digital access · instant support",
     vendors: [
-      { name: "Låsesmeden CPH", eta: "18 min", price: "1 450 DKK", rating: 4.9, badge: "BEST MATCH", selected: true, phone: "+4532112233", travel: "3.1 km · Nørrebro" },
-      { name: "Nord Lock & Key",  eta: "26 min", price: "1 250 DKK", rating: 4.6, badge: "CHEAPEST",  selected: false, phone: "+4533445566", travel: "5.8 km · Østerbro" },
-      { name: "Sikker24 Locksmith", eta: "22 min", price: "1 700 DKK", rating: 4.8, badge: "24/7", selected: false, phone: "+4570201234", travel: "4.4 km · City" },
+      { name: "Landlord · Mette Holm",   eta: "Answers <2 min", price: "Included",    rating: 5.0, badge: "BEST MATCH", selected: true,  phone: "+4530112233", travel: "Building owner · on-call" },
+      { name: "Fridson 24/7 Support",    eta: "Live now",       price: "Included",    rating: 4.9, badge: "INSTANT",    selected: false, phone: "+4571000000", travel: "Voice agent + human handover" },
+      { name: "Digital Key Provider",    eta: "Auto-renew 30 s",price: "890 DKK / yr",rating: 4.8, badge: "ONLINE FIX", selected: false, phone: "+4570808080", travel: "Cloud key portal · no visit" },
     ],
     steps: lockoutSteps(),
   },
@@ -1753,10 +1753,10 @@ const VENDOR_PLAYBOOK: Record<SystemKey, VendorSet> = {
 function lockoutSteps() {
   return [
     { title: "Lockout detected", detail: "Door A1 · expired digital key for tenant #214", status: "done" as const, time: "14:02", icon: <CheckCircle2 className="size-3.5" /> },
-    { title: "Locksmiths bidding", detail: "8 24/7 locksmiths invited · 3 responded", status: "done" as const, time: "14:03", icon: <Activity className="size-3.5" /> },
-    { title: "Låsesmeden CPH selected", detail: "Best score: 18 min ETA × rating 4.9", status: "active" as const, time: "14:04", icon: <KeyRound className="size-3.5" /> },
-    { title: "Digital key renewed", detail: "12-month subscription auto-provisioned", status: "pending" as const, time: "—", icon: <ShieldCheck className="size-3.5" /> },
-    { title: "Tenant unlocked & notified", detail: "New mobile key + SMS confirmation", status: "pending" as const, time: "—", icon: <CheckCircle2 className="size-3.5" /> },
+    { title: "Calm guidance pushed", detail: "Voice agent walks tenant through 4 safe steps", status: "done" as const, time: "14:03", icon: <Sparkles className="size-3.5" /> },
+    { title: "Landlord dialled", detail: "Mette Holm picked up · instant verbal support", status: "active" as const, time: "14:04", icon: <Phone className="size-3.5" /> },
+    { title: "Digital key renewed online", detail: "12-month subscription auto-provisioned · NFC + mobile", status: "pending" as const, time: "—", icon: <ShieldCheck className="size-3.5" /> },
+    { title: "Tenant unlocked", detail: "Door A1 opened · SMS receipt + audit log", status: "pending" as const, time: "—", icon: <CheckCircle2 className="size-3.5" /> },
   ];
 }
 
