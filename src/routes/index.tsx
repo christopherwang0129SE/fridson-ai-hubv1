@@ -1686,11 +1686,11 @@ type VendorSet = {
 
 const VENDOR_PLAYBOOK: Record<SystemKey, VendorSet> = {
   lockout: {
-    service: "Lockout & digital access",
+    service: "Digital access · instant support",
     vendors: [
-      { name: "Låsesmeden CPH", eta: "18 min", price: "1 450 DKK", rating: 4.9, badge: "BEST MATCH", selected: true, phone: "+4532112233", travel: "3.1 km · Nørrebro" },
-      { name: "Nord Lock & Key",  eta: "26 min", price: "1 250 DKK", rating: 4.6, badge: "CHEAPEST",  selected: false, phone: "+4533445566", travel: "5.8 km · Østerbro" },
-      { name: "Sikker24 Locksmith", eta: "22 min", price: "1 700 DKK", rating: 4.8, badge: "24/7", selected: false, phone: "+4570201234", travel: "4.4 km · City" },
+      { name: "Landlord · Mette Holm",   eta: "Answers <2 min", price: "Included",    rating: 5.0, badge: "BEST MATCH", selected: true,  phone: "+4530112233", travel: "Building owner · on-call" },
+      { name: "Fridson 24/7 Support",    eta: "Live now",       price: "Included",    rating: 4.9, badge: "INSTANT",    selected: false, phone: "+4571000000", travel: "Voice agent + human handover" },
+      { name: "Digital Key Provider",    eta: "Auto-renew 30 s",price: "890 DKK / yr",rating: 4.8, badge: "ONLINE FIX", selected: false, phone: "+4570808080", travel: "Cloud key portal · no visit" },
     ],
     steps: lockoutSteps(),
   },
@@ -1753,10 +1753,10 @@ const VENDOR_PLAYBOOK: Record<SystemKey, VendorSet> = {
 function lockoutSteps() {
   return [
     { title: "Lockout detected", detail: "Door A1 · expired digital key for tenant #214", status: "done" as const, time: "14:02", icon: <CheckCircle2 className="size-3.5" /> },
-    { title: "Locksmiths bidding", detail: "8 24/7 locksmiths invited · 3 responded", status: "done" as const, time: "14:03", icon: <Activity className="size-3.5" /> },
-    { title: "Låsesmeden CPH selected", detail: "Best score: 18 min ETA × rating 4.9", status: "active" as const, time: "14:04", icon: <KeyRound className="size-3.5" /> },
-    { title: "Digital key renewed", detail: "12-month subscription auto-provisioned", status: "pending" as const, time: "—", icon: <ShieldCheck className="size-3.5" /> },
-    { title: "Tenant unlocked & notified", detail: "New mobile key + SMS confirmation", status: "pending" as const, time: "—", icon: <CheckCircle2 className="size-3.5" /> },
+    { title: "Calm guidance pushed", detail: "Voice agent walks tenant through 4 safe steps", status: "done" as const, time: "14:03", icon: <Sparkles className="size-3.5" /> },
+    { title: "Landlord dialled", detail: "Mette Holm picked up · instant verbal support", status: "active" as const, time: "14:04", icon: <Phone className="size-3.5" /> },
+    { title: "Digital key renewed online", detail: "12-month subscription auto-provisioned · NFC + mobile", status: "pending" as const, time: "—", icon: <ShieldCheck className="size-3.5" /> },
+    { title: "Tenant unlocked", detail: "Door A1 opened · SMS receipt + audit log", status: "pending" as const, time: "—", icon: <CheckCircle2 className="size-3.5" /> },
   ];
 }
 
@@ -1779,6 +1779,29 @@ function genericSteps(vendor: string, asset: string) {
     { title: "Resolution & docs", detail: "Auto-close + invoice reconciliation", status: "pending" as const, time: "—", icon: <CheckCircle2 className="size-3.5" /> },
   ];
 }
+
+// ---------------- AI guidance (calm action plan) ----------------
+
+const AI_GUIDANCE: Partial<Record<SystemKey, { title: string; steps: string[] }>> = {
+  lockout: {
+    title: "Stay calm — guided steps while we resolve this",
+    steps: [
+      "Take a breath. You're safe. The building knows you're at Door A1.",
+      "Stay near the QR plate so the lobby camera keeps you in view.",
+      "We're dialling your landlord now — answer the incoming call.",
+      "Your digital key is being auto-renewed online. No locksmith needed.",
+    ],
+  },
+  roof: {
+    title: "Containment plan — follow these 4 steps now",
+    steps: [
+      "Evacuate the boardroom and close the door behind you.",
+      "Place the bucket from the AV cabinet under the dripping tile.",
+      "Unplug electronics within 2 m of the leak — power is being isolated.",
+      "Stay on the floor — the roofer and insurer will call within 5 min.",
+    ],
+  },
+};
 
 function WorkflowCard({
   floor,
@@ -1836,7 +1859,19 @@ function WorkflowCard({
 
   // Animate execution progress after dispatch
   const [progress, setProgress] = useState(0);
+  const [simStartedAt, setSimStartedAt] = useState<number | null>(null);
   useEffect(() => {
+    // Simulation mode — linear progress to 100 over 60 s
+    if (simStartedAt) {
+      setProgress(0);
+      const id = window.setInterval(() => {
+        const elapsed = Date.now() - simStartedAt;
+        const pct = Math.min(100, Math.round((elapsed / 60000) * 100));
+        setProgress(pct);
+        if (pct >= 100) window.clearInterval(id);
+      }, 250);
+      return () => window.clearInterval(id);
+    }
     if (!dispatchedAt) {
       setProgress(0);
       return;
@@ -1849,7 +1884,42 @@ function WorkflowCard({
       });
     }, 600);
     return () => window.clearInterval(id);
-  }, [dispatchedAt]);
+  }, [dispatchedAt, simStartedAt]);
+
+  // Reset simulation when scenario changes
+  useEffect(() => {
+    setSimStartedAt(null);
+  }, [focus?.id]);
+
+  const runSimulation = () => {
+    if (!focus) return;
+    setApproved(true);
+    if (!dispatchedAt) onDispatch(SYSTEM_META[focus.system].label, winner.name);
+    setSimStartedAt(Date.now());
+    const sys = focus.system;
+    const fire = (ms: number, fn: () => void) => window.setTimeout(fn, ms);
+    toast("AI simulation started", {
+      description: "Running end-to-end workflow · ~60 seconds",
+      duration: 3500,
+    });
+    if (sys === "lockout") {
+      fire(8000,  () => toast("Voice agent online", { description: "Calming the tenant · 4 guided steps pushed." }));
+      fire(18000, () => toast("Landlord on the call", { description: "Mette Holm picked up in 1 min 42 s." }));
+      fire(32000, () => toast.success("Digital key renewed", { description: "12-month Pro plan auto-provisioned (890 DKK)." }));
+      fire(46000, () => toast("Door A1 unlocking…", { description: "Mobile + NFC key delivered to tenant phone." }));
+      fire(58000, () => toast.success("Tenant inside · case closed", { description: "Audit log filed. Resolution time 1m 02s." }));
+    } else if (sys === "roof") {
+      fire(7000,  () => toast("Containment pushed", { description: "Boardroom evacuated · drip trays deployed." }));
+      fire(16000, () => toast("Stakeholders alerted", { description: "Facility, Tryg insurance, tenants, 3 roofers." }));
+      fire(28000, () => toast("Tag & Tæt A/S accepted", { description: "ETA 55 min · OEM membrane on truck." }));
+      fire(42000, () => toast.success("Insurance claim filed", { description: "Tryg case #CL-44218 · photos attached." }));
+      fire(58000, () => toast.success("Crew on site · sealing leak", { description: "Live tracking · ETA repair complete 16:20." }));
+    } else {
+      fire(15000, () => toast(`${winner.name} accepted`, { description: "Job confirmed · technician dispatched." }));
+      fire(35000, () => toast("Tenant notified", { description: "SMS + dashboard ping sent." }));
+      fire(55000, () => toast.success("Technician on site", { description: "Live tracking enabled." }));
+    }
+  };
 
   // Step status driven by progress
   const stepCount = playbook.steps.length;
@@ -1925,11 +1995,43 @@ function WorkflowCard({
         )}
       </div>
 
+      {/* AI-generated guidance for the person on the ground */}
+      {focus && AI_GUIDANCE[focus.system] && (
+        <div
+          className="rounded-lg border border-accent/40 p-2.5"
+          style={{
+            background:
+              "linear-gradient(135deg, color-mix(in oklch, var(--accent) 14%, transparent), transparent)",
+          }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-accent">
+              <Sparkles className="size-3" />
+              AI action plan
+            </div>
+            <span className="text-[9px] font-mono text-muted-foreground">auto-generated</span>
+          </div>
+          <div className="text-xs font-medium mb-1.5">{AI_GUIDANCE[focus.system]!.title}</div>
+          <ol className="space-y-1 text-[11px] leading-relaxed">
+            {AI_GUIDANCE[focus.system]!.steps.map((s, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="size-4 shrink-0 rounded-full grid place-items-center text-[9px] font-mono bg-accent/30 text-accent">
+                  {i + 1}
+                </span>
+                <span className="text-foreground/90">{s}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       {/* Bidder leaderboard */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            Live bids · {playbook.vendors.length} contractors
+            {focus?.system === "lockout"
+              ? `Support channels · ${playbook.vendors.length} options`
+              : `Live bids · ${playbook.vendors.length} contractors`}
           </div>
           <span className="text-[10px] font-mono text-magenta">ranked by score</span>
         </div>
@@ -2053,6 +2155,16 @@ function WorkflowCard({
 
       {/* Approval + outcome */}
       <div className="mt-auto space-y-2">
+        <button
+          onClick={runSimulation}
+          className="w-full h-8 rounded-md text-[11px] font-medium border border-accent/50 text-accent hover:bg-accent/10 inline-flex items-center justify-center gap-1.5"
+          title="Auto-runs the full AI workflow with live toasts (~60 s)"
+        >
+          <Sparkles className="size-3" />
+          {simStartedAt && progress < 100
+            ? `Simulating · ${progress}%`
+            : "▶ Run AI workflow simulation · 60 s"}
+        </button>
         {!approved ? (
           <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
             <div className="flex items-start gap-2">
