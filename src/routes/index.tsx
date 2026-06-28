@@ -1911,6 +1911,10 @@ function WorkflowCard({
       description: "Running end-to-end workflow · ~60 seconds",
       duration: 3500,
     });
+    mail(
+      `Fridson AI · ${sys === "lockout" ? "Lobby lockout" : sys === "roof" ? "Boardroom roof leak" : "Incident"} dispatched`,
+      `End-to-end AI workflow started for ${SYSTEM_META[focus.system].label}. You will receive sequenced stakeholder updates over the next ~60 seconds.`,
+    );
     if (sys === "lockout") {
       fire(8000,  () => { toast("Voice agent online", { description: "Calming the tenant · 4 guided steps pushed." }); mail("Fridson AI · Voice agent online", "Tenant locked out at Lobby Door A1. AI voice agent engaged, pushing 4 calming guided steps. Landlord Mette Holm being dialed."); });
       fire(18000, () => { toast("Landlord on the call", { description: "Mette Holm picked up in 1 min 42 s." }); mail("Landlord connected · Lobby A1 lockout", "Mette Holm (landlord) picked up in 1m 42s. Verifying tenant identity and authorizing digital key renewal."); });
