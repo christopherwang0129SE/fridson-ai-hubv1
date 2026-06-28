@@ -1090,17 +1090,15 @@ function IntakeCard({
     <CardShell
       index="02 · Report"
       title="AI Intake"
-      subtitle="Voice, camera, sensor or QR — one agent."
+      subtitle="Voice or photo · one tap."
       icon={<Sparkles className="size-4" />}
       accent="primary"
     >
       {/* Mode tabs */}
-      <div className="grid grid-cols-4 gap-1 p-1 rounded-lg bg-secondary/40 border border-border">
+      <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-secondary/40 border border-border">
         {([
           { k: "voice", icon: <Mic className="size-3.5" />, label: "Voice" },
           { k: "camera", icon: <Camera className="size-3.5" />, label: "Camera" },
-          { k: "sensor", icon: <Radio className="size-3.5" />, label: "Sensor" },
-          { k: "qr", icon: <QrCode className="size-3.5" />, label: "QR" },
         ] as { k: IntakeMode; icon: React.ReactNode; label: string }[]).map((t) => (
           <button
             key={t.k}
@@ -1271,24 +1269,22 @@ function IntakeCard({
             borderColor: "color-mix(in oklch, var(--primary) 40%, transparent)",
           }}
         >
-          <div className="flex items-center gap-2 text-primary text-[10px] font-mono uppercase tracking-widest">
-            <Sparkles className="size-3" />
-            AI triage
-          </div>
-          <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-            <Tag label="Type" value={focus ? SYSTEM_META[focus.system].label : "—"} tone="info" />
-            <Tag
-              label="Priority"
-              value={
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Sparkles className="size-3.5 text-primary shrink-0" />
+              <span className="text-xs font-medium truncate">
+                {focus ? SYSTEM_META[focus.system].label : "—"}
+              </span>
+            </div>
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
                 focus?.status === "critical"
-                  ? "Critical"
-                  : focus?.status === "warning"
-                    ? "High"
-                    : "Low"
-              }
-              tone={focus?.status === "critical" ? "destructive" : "warning"}
-            />
-            <Tag label="Confidence" value="92%" tone="success" />
+                  ? "bg-destructive/20 text-destructive"
+                  : "bg-warning/20 text-warning"
+              }`}
+            >
+              {focus?.status === "critical" ? "Critical" : "High"}
+            </span>
           </div>
           <button
             className="mt-3 w-full h-9 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-primary-foreground shadow-lg shadow-primary/30"
@@ -1957,25 +1953,19 @@ function WorkflowCard({
             accent="magenta"
           >
       {/* Potential failure alerts */}
+      {alerts.length > 0 && (
       <div>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             <AlertTriangle className="size-3" />
             Potential failures
           </div>
-          {alerts.length > 0 && (
-            <span className="text-[10px] font-mono text-warning flex items-center gap-1">
-              <span className="size-1.5 rounded-full bg-warning animate-pulse" />
-              {alerts.length}
-            </span>
-          )}
+          <span className="text-[10px] font-mono text-warning flex items-center gap-1">
+            <span className="size-1.5 rounded-full bg-warning animate-pulse" />
+            {alerts.length}
+          </span>
         </div>
-        {alerts.length === 0 ? (
-          <div className="rounded-md border border-dashed border-border bg-secondary/20 px-3 py-3 text-[11px] font-mono text-muted-foreground text-center">
-            No threshold breaches.
-          </div>
-        ) : (
-          <ol className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+        <ol className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
             {alerts.map((a) => (
               <li
                 key={a.id}
@@ -2003,28 +1993,21 @@ function WorkflowCard({
                   {a.value}
                   <span className="text-muted-foreground"> / {a.threshold}</span>
                 </span>
-                <span className="font-mono text-[10px] text-muted-foreground shrink-0">
-                  {new Date(a.at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}
-                </span>
               </li>
             ))}
           </ol>
-        )}
       </div>
+      )}
 
       {/* Bidder leaderboard */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             {focus?.system === "lockout"
-              ? `Support channels · ${playbook.vendors.length} options`
-              : `Live bids · ${playbook.vendors.length} contractors`}
+              ? "Support channels"
+              : "Live bids"}
           </div>
-          <span className="text-[10px] font-mono text-magenta">ranked by score</span>
+          <span className="text-[10px] font-mono text-magenta">{playbook.vendors.length} ranked</span>
         </div>
         <ul className="space-y-1.5">
           {playbook.vendors.map((v) => {
@@ -2084,9 +2067,6 @@ function WorkflowCard({
                     <Star className="size-3" /> {v.rating}
                   </span>
                 </div>
-                <div className="mt-1 text-[10px] font-mono text-muted-foreground truncate">
-                  {v.travel} · {v.phone}
-                </div>
               </li>
             );
           })}
@@ -2097,23 +2077,18 @@ function WorkflowCard({
       <div className="mt-auto">
         {!approved ? (
           <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
-              <div className="text-xs text-muted-foreground leading-relaxed flex-1">
-                <span className="text-foreground font-medium">Approval pending.</span>{" "}
-                Dispatch <span className="text-foreground">{winner.name}</span> ·{" "}
-                <span className="font-mono">{winner.eta}</span> ·{" "}
-                <span className="font-mono">{winner.price}</span>
-              </div>
+            <div className="flex items-center gap-2 text-xs">
+              <AlertTriangle className="size-4 text-warning shrink-0" />
+              <span className="font-medium">Approve {winner.name}?</span>
             </div>
-            <div className="mt-2.5 grid grid-cols-2 gap-2">
+            <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 onClick={approveAndCall}
                 className="h-9 rounded-md text-xs font-semibold inline-flex items-center justify-center gap-1.5 text-primary-foreground shadow-md shadow-primary/30 hover:opacity-90"
                 style={{ background: "var(--gradient-aurora)" }}
               >
                 <Phone className="size-3.5" />
-                Yes · approve & call
+                Yes · call
               </button>
               <button
                 className="h-9 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground"
