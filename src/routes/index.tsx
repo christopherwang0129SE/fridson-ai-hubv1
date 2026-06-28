@@ -1671,74 +1671,102 @@ function Tag({
 
 type VendorSet = {
   service: string;
-  vendors: { name: string; eta: string; price: string; rating: number; badge: string | null; selected: boolean }[];
+  vendors: {
+    name: string;
+    eta: string;
+    price: string;
+    rating: number;
+    badge: string | null;
+    selected: boolean;
+    phone: string;
+    travel: string;
+  }[];
   steps: { title: string; detail: string; status: "done" | "active" | "pending"; time: string; icon: React.ReactNode }[];
 };
 
 const VENDOR_PLAYBOOK: Record<SystemKey, VendorSet> = {
-  hvac: {
-    service: "HVAC service",
+  lockout: {
+    service: "Lockout & digital access",
     vendors: [
-      { name: "Klimatek HVAC ApS", eta: "42 min", price: "4 200 DKK", rating: 4.9, badge: "BEST MATCH", selected: true },
-      { name: "Nord Ventilation", eta: "1h 10m", price: "3 850 DKK", rating: 4.6, badge: "CHEAPEST", selected: false },
-      { name: "CPH Service Group", eta: "55 min", price: "4 900 DKK", rating: 4.8, badge: null, selected: false },
+      { name: "Låsesmeden CPH", eta: "18 min", price: "1 450 DKK", rating: 4.9, badge: "BEST MATCH", selected: true, phone: "+4532112233", travel: "3.1 km · Nørrebro" },
+      { name: "Nord Lock & Key",  eta: "26 min", price: "1 250 DKK", rating: 4.6, badge: "CHEAPEST",  selected: false, phone: "+4533445566", travel: "5.8 km · Østerbro" },
+      { name: "Sikker24 Locksmith", eta: "22 min", price: "1 700 DKK", rating: 4.8, badge: "24/7", selected: false, phone: "+4570201234", travel: "4.4 km · City" },
     ],
-    steps: hvacSteps(),
+    steps: lockoutSteps(),
+  },
+  roof: {
+    service: "Roof leak emergency",
+    vendors: [
+      { name: "Tag & Tæt A/S", eta: "55 min", price: "6 800 DKK", rating: 4.9, badge: "BEST MATCH", selected: true, phone: "+4570123344", travel: "7.2 km · Valby" },
+      { name: "Phoenix Tagdækning", eta: "1h 25m", price: "5 600 DKK", rating: 4.6, badge: "CHEAPEST", selected: false, phone: "+4536998877", travel: "11.4 km · Glostrup" },
+      { name: "Icopal Service", eta: "1h", price: "7 400 DKK", rating: 4.8, badge: "OEM MEMBRANE", selected: false, phone: "+4544556677", travel: "8.0 km · Hvidovre" },
+    ],
+    steps: roofSteps(),
   },
   coffee: {
     service: "Coffee machine service",
     vendors: [
-      { name: "Caffè Care Nordic", eta: "1h 20m", price: "1 850 DKK", rating: 4.9, badge: "BEST MATCH", selected: true },
-      { name: "BaristaFix DK", eta: "2h", price: "1 450 DKK", rating: 4.5, badge: "CHEAPEST", selected: false },
-      { name: "La Marzocco CPH", eta: "Tomorrow", price: "2 100 DKK", rating: 5.0, badge: "OEM", selected: false },
+      { name: "Caffè Care Nordic", eta: "1h 20m", price: "1 850 DKK", rating: 4.9, badge: "BEST MATCH", selected: true,  phone: "+4533221100", travel: "6.2 km" },
+      { name: "BaristaFix DK",     eta: "2h",     price: "1 450 DKK", rating: 4.5, badge: "CHEAPEST",   selected: false, phone: "+4533112244", travel: "9.0 km" },
+      { name: "La Marzocco CPH",   eta: "Tomorrow",price: "2 100 DKK", rating: 5.0, badge: "OEM",       selected: false, phone: "+4570707070", travel: "12 km" },
     ],
     steps: genericSteps("Caffè Care Nordic", "espresso machine"),
   },
   fridge: {
     service: "Refrigeration repair",
     vendors: [
-      { name: "Cool Solutions A/S", eta: "55 min", price: "2 600 DKK", rating: 4.8, badge: "BEST MATCH", selected: true },
-      { name: "FrostTek Service", eta: "1h 30m", price: "2 200 DKK", rating: 4.4, badge: "CHEAPEST", selected: false },
-      { name: "Nordic Cooling", eta: "1h 10m", price: "2 850 DKK", rating: 4.7, badge: null, selected: false },
+      { name: "Cool Solutions A/S", eta: "55 min",  price: "2 600 DKK", rating: 4.8, badge: "BEST MATCH", selected: true,  phone: "+4533998811", travel: "5.5 km" },
+      { name: "FrostTek Service",   eta: "1h 30m",  price: "2 200 DKK", rating: 4.4, badge: "CHEAPEST",   selected: false, phone: "+4533887766", travel: "10 km" },
+      { name: "Nordic Cooling",     eta: "1h 10m",  price: "2 850 DKK", rating: 4.7, badge: null,         selected: false, phone: "+4533776655", travel: "7.4 km" },
     ],
     steps: genericSteps("Cool Solutions A/S", "kitchen fridge"),
   },
   office: {
     service: "Office equipment service",
     vendors: [
-      { name: "Konica MFP Care", eta: "2h", price: "1 400 DKK", rating: 4.7, badge: "BEST MATCH", selected: true },
-      { name: "PrintHub CPH", eta: "3h", price: "1 100 DKK", rating: 4.3, badge: "CHEAPEST", selected: false },
-      { name: "Office Service Plus", eta: "Same day", price: "1 650 DKK", rating: 4.6, badge: null, selected: false },
+      { name: "Konica MFP Care",     eta: "2h",       price: "1 400 DKK", rating: 4.7, badge: "BEST MATCH", selected: true,  phone: "+4533665544", travel: "8 km" },
+      { name: "PrintHub CPH",        eta: "3h",       price: "1 100 DKK", rating: 4.3, badge: "CHEAPEST",   selected: false, phone: "+4533554433", travel: "11 km" },
+      { name: "Office Service Plus", eta: "Same day", price: "1 650 DKK", rating: 4.6, badge: null,         selected: false, phone: "+4533443322", travel: "9.2 km" },
     ],
     steps: genericSteps("Konica MFP Care", "printer C-22"),
   },
   lighting: {
     service: "Lighting service",
     vendors: [
-      { name: "Lumen Nordic", eta: "1h 30m", price: "1 200 DKK", rating: 4.8, badge: "BEST MATCH", selected: true },
-      { name: "ElectroFix DK", eta: "1h", price: "1 050 DKK", rating: 4.5, badge: "FASTEST", selected: false },
-      { name: "Light & Power", eta: "2h", price: "1 400 DKK", rating: 4.6, badge: null, selected: false },
+      { name: "Lumen Nordic",  eta: "1h 30m", price: "1 200 DKK", rating: 4.8, badge: "BEST MATCH", selected: true,  phone: "+4533221199", travel: "6 km" },
+      { name: "ElectroFix DK", eta: "1h",     price: "1 050 DKK", rating: 4.5, badge: "FASTEST",    selected: false, phone: "+4533221188", travel: "4.2 km" },
+      { name: "Light & Power", eta: "2h",     price: "1 400 DKK", rating: 4.6, badge: null,          selected: false, phone: "+4533221177", travel: "8.6 km" },
     ],
     steps: genericSteps("Lumen Nordic", "zone B lighting"),
   },
   plumbing: {
     service: "Plumbing service",
     vendors: [
-      { name: "Rør & Vand ApS", eta: "38 min", price: "2 100 DKK", rating: 4.9, badge: "BEST MATCH", selected: true },
-      { name: "AquaService CPH", eta: "1h", price: "1 800 DKK", rating: 4.6, badge: "CHEAPEST", selected: false },
-      { name: "Nordic Plumb", eta: "50 min", price: "2 300 DKK", rating: 4.7, badge: null, selected: false },
+      { name: "Rør & Vand ApS",  eta: "38 min", price: "2 100 DKK", rating: 4.9, badge: "BEST MATCH", selected: true,  phone: "+4533887700", travel: "3.8 km" },
+      { name: "AquaService CPH", eta: "1h",     price: "1 800 DKK", rating: 4.6, badge: "CHEAPEST",   selected: false, phone: "+4533887711", travel: "6.4 km" },
+      { name: "Nordic Plumb",    eta: "50 min", price: "2 300 DKK", rating: 4.7, badge: null,          selected: false, phone: "+4533887722", travel: "5.1 km" },
     ],
     steps: genericSteps("Rør & Vand ApS", "pantry sink"),
   },
 };
 
-function hvacSteps() {
+function lockoutSteps() {
   return [
-    { title: "Incident triaged", detail: "AHU-04 · HVAC · High priority", status: "done" as const, time: "14:02", icon: <CheckCircle2 className="size-3.5" /> },
-    { title: "Vendor bidding opened", detail: "12 contractors invited · 3 responded", status: "done" as const, time: "14:03", icon: <Activity className="size-3.5" /> },
-    { title: "Klimatek HVAC selected", detail: "Best score: reliability × cost × ETA", status: "active" as const, time: "14:04", icon: <Wrench className="size-3.5" /> },
-    { title: "Tenant + compliance notified", detail: "SMS sent · safety log queued", status: "pending" as const, time: "—", icon: <FileText className="size-3.5" /> },
-    { title: "Resolution & documentation", detail: "Auto-close + invoice reconciliation", status: "pending" as const, time: "—", icon: <CheckCircle2 className="size-3.5" /> },
+    { title: "Lockout detected", detail: "Door A1 · expired digital key for tenant #214", status: "done" as const, time: "14:02", icon: <CheckCircle2 className="size-3.5" /> },
+    { title: "Locksmiths bidding", detail: "8 24/7 locksmiths invited · 3 responded", status: "done" as const, time: "14:03", icon: <Activity className="size-3.5" /> },
+    { title: "Låsesmeden CPH selected", detail: "Best score: 18 min ETA × rating 4.9", status: "active" as const, time: "14:04", icon: <KeyRound className="size-3.5" /> },
+    { title: "Digital key renewed", detail: "12-month subscription auto-provisioned", status: "pending" as const, time: "—", icon: <ShieldCheck className="size-3.5" /> },
+    { title: "Tenant unlocked & notified", detail: "New mobile key + SMS confirmation", status: "pending" as const, time: "—", icon: <CheckCircle2 className="size-3.5" /> },
+  ];
+}
+
+function roofSteps() {
+  return [
+    { title: "Roof leak triaged", detail: "Boardroom ceiling · water ingress · critical", status: "done" as const, time: "14:02", icon: <CheckCircle2 className="size-3.5" /> },
+    { title: "Stakeholders alerted", detail: "Facility manager, insurer, tenants, roofer pool", status: "done" as const, time: "14:03", icon: <Mail className="size-3.5" /> },
+    { title: "Tag & Tæt A/S selected", detail: "Best score: certified membrane × ETA 55 min", status: "active" as const, time: "14:04", icon: <Wrench className="size-3.5" /> },
+    { title: "Containment & evacuation", detail: "Boardroom cleared · drip trays deployed", status: "pending" as const, time: "—", icon: <AlertTriangle className="size-3.5" /> },
+    { title: "Permanent repair & insurance", detail: "Membrane reseal + claim file auto-opened", status: "pending" as const, time: "—", icon: <FileText className="size-3.5" /> },
   ];
 }
 
