@@ -35,6 +35,8 @@ import {
   CircleDot,
   SlidersHorizontal,
   Zap,
+  Volume2,
+  Droplets,
 } from "lucide-react";
 import floorPlan from "@/assets/floor-plan.jpg";
 
