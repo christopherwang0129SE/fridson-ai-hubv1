@@ -706,8 +706,14 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     selector: '[data-tour="workflow"]',
-    title: "03 · Act — Vendor workflow",
-    body: "Agents auto-bid the job to vetted contractors and orchestrate the response end-to-end.",
+    title: "03 · Bid — Vendor leaderboard",
+    body: "Agents auto-bid the job to vetted contractors, ranked by price, ETA and rating. Approve and call in one tap.",
+    position: "left",
+  },
+  {
+    selector: '[data-tour="execute"]',
+    title: "04 · Execute — Guided response",
+    body: "Live progress bar, AI calming action plan, and stakeholder follow-through until the case closes.",
     position: "left",
   },
 ];
