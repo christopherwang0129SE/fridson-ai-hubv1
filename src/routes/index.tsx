@@ -261,6 +261,9 @@ function Index() {
   const floor = useMemo(() => FLOORS.find((f) => f.id === floorId)!, [floorId]);
   const [demo, setDemo] = useState(false);
   const [tour, setTour] = useState(false);
+  const [alerts, setAlerts] = useState<SensorAlert[]>([]);
+  const pushAlert = (a: SensorAlert) =>
+    setAlerts((prev) => [a, ...prev].slice(0, 6));
 
   const toggleDemo = () => {
     const next = !demo;
@@ -299,10 +302,10 @@ function Index() {
               <div className="flex-1 min-w-0"><DigitalTwinCard floor={floor} /></div>
             </div>
             <div data-tour="intake" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><IntakeCard floor={floor} /></div>
+              <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} /></div>
             </div>
             <div data-tour="workflow" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} /></div>
+              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} /></div>
             </div>
           </div>
         </main>
