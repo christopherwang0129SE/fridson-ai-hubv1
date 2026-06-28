@@ -32,6 +32,8 @@ import {
   Thermometer,
   Gauge,
   CircleDot,
+  SlidersHorizontal,
+  Zap,
 } from "lucide-react";
 import floorPlan from "@/assets/floor-plan.jpg";
 
