@@ -1784,18 +1784,55 @@ function WorkflowCard({
   floor,
   alerts,
   dispatchedAt,
+  onDispatch,
 }: {
   floor: Floor;
   alerts: SensorAlert[];
   dispatchedAt: number | null;
+  onDispatch: (label: string, vendorName: string) => void;
 }) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
     floor.hotspots.find((h) => h.status === "warning") ??
     floor.hotspots[0];
 
-  const playbook = focus ? VENDOR_PLAYBOOK[focus.system] : VENDOR_PLAYBOOK.hvac;
+  const playbook = focus ? VENDOR_PLAYBOOK[focus.system] : VENDOR_PLAYBOOK.lockout;
   const winner = playbook.vendors.find((v) => v.selected) ?? playbook.vendors[0];
+
+  // Local approval state — resets when scenario (focus) changes
+  const [approved, setApproved] = useState(false);
+  useEffect(() => {
+    setApproved(false);
+  }, [focus?.id]);
+
+  const approveAndCall = () => {
+    setApproved(true);
+    if (!dispatchedAt && focus) {
+      onDispatch(SYSTEM_META[focus.system].label, winner.name);
+    }
+    // Direct call — opens the OS dialer / softphone
+    try {
+      window.location.href = `tel:${winner.phone.replace(/\s+/g, "")}`;
+    } catch {
+      /* ignore */
+    }
+    if (focus?.system === "lockout") {
+      window.setTimeout(() => {
+        toast.success("Digital key renewed", {
+          description: "12-month subscription auto-provisioned to tenant #214.",
+          duration: 4500,
+        });
+      }, 1800);
+    }
+    if (focus?.system === "roof") {
+      window.setTimeout(() => {
+        toast.success("Stakeholders notified", {
+          description: "Facility, insurer, tenants & 3 roofers received the alert.",
+          duration: 4500,
+        });
+      }, 1800);
+    }
+  };
 
   // Animate execution progress after dispatch
   const [progress, setProgress] = useState(0);
