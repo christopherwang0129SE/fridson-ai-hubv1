@@ -1258,6 +1258,12 @@ function IntakeCard({
           <button
             className="mt-3 w-full h-9 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-primary-foreground shadow-lg shadow-primary/30"
             style={{ background: "var(--gradient-aurora)" }}
+            onClick={() => {
+              if (!focus) return;
+              const pb = VENDOR_PLAYBOOK[focus.system];
+              const winner = pb.vendors.find((v) => v.selected) ?? pb.vendors[0];
+              onDispatch(SYSTEM_META[focus.system].label, winner.name);
+            }}
           >
             <Send className="size-3.5" />
             Dispatch workflow
