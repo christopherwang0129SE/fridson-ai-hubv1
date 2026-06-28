@@ -250,7 +250,7 @@ function Index() {
   const floor = useMemo(() => FLOORS.find((f) => f.id === floorId)!, [floorId]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased">
+    <div className="h-screen overflow-hidden flex flex-col bg-background text-foreground font-sans antialiased">
       {/* Aurora background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 size-[520px] rounded-full bg-primary/25 blur-[120px]" />
@@ -259,10 +259,10 @@ function Index() {
       </div>
 
       <Header />
-      <div className="flex">
+      <div className="flex flex-1 min-h-0">
         <FloorSidebar floorId={floorId} onSelect={setFloorId} />
-        <main className="flex-1 px-6 lg:px-10 py-6 max-w-[1600px] mx-auto">
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <main className="flex-1 min-w-0 px-4 lg:px-6 py-4 overflow-hidden">
+          <div className="grid grid-cols-3 gap-4 h-full min-h-0">
             <DigitalTwinCard floor={floor} />
             <IntakeCard floor={floor} />
             <WorkflowCard floor={floor} />
