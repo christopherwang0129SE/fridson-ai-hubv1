@@ -876,7 +876,13 @@ function MiniStat({
 
 type IntakeMode = "voice" | "camera" | "sensor" | "qr";
 
-function IntakeCard({ floor }: { floor: Floor }) {
+function IntakeCard({
+  floor,
+  onAlert,
+}: {
+  floor: Floor;
+  onAlert: (a: SensorAlert) => void;
+}) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
     floor.hotspots.find((h) => h.status === "warning") ??
@@ -1176,7 +1182,7 @@ function IntakeCard({ floor }: { floor: Floor }) {
         )}
 
         {mode === "sensor" && (
-          <SensorPanel focusLabel={focus?.label ?? "—"} />
+          <SensorPanel focusLabel={focus?.label ?? "—"} onAlert={onAlert} />
         )}
 
         {mode === "qr" && (
