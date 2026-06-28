@@ -1991,6 +1991,9 @@ function WorkflowCard({
                     <Star className="size-3" /> {v.rating}
                   </span>
                 </div>
+                <div className="mt-1 text-[10px] font-mono text-muted-foreground truncate">
+                  {v.travel} · {v.phone}
+                </div>
               </li>
             );
           })}
