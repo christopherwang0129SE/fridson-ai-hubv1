@@ -365,7 +365,7 @@ function Index() {
               <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} onDispatch={dispatchWorkflow} /></div>
             </div>
             <div data-tour="workflow" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} /></div>
+              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} onDispatch={dispatchWorkflow} /></div>
             </div>
           </div>
         </main>
