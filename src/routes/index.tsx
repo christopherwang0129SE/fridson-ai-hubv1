@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { sendDemoEmail } from "@/lib/email.functions";
 import {
   Activity,
   AlertTriangle,
@@ -1860,6 +1862,13 @@ function WorkflowCard({
   // Animate execution progress after dispatch
   const [progress, setProgress] = useState(0);
   const [simStartedAt, setSimStartedAt] = useState<number | null>(null);
+  const sendEmail = useServerFn(sendDemoEmail);
+  const DEMO_EMAIL = "chrisw0129@gmail.com";
+  const mail = (subject: string, text: string) => {
+    sendEmail({ data: { to: DEMO_EMAIL, subject, text } }).catch((err) => {
+      toast.error("Email failed", { description: String(err?.message ?? err).slice(0, 140) });
+    });
+  };
   useEffect(() => {
     // Simulation mode — linear progress to 100 over 60 s
     if (simStartedAt) {
@@ -1902,18 +1911,22 @@ function WorkflowCard({
       description: "Running end-to-end workflow · ~60 seconds",
       duration: 3500,
     });
+    mail(
+      `Fridson AI · ${sys === "lockout" ? "Lobby lockout" : sys === "roof" ? "Boardroom roof leak" : "Incident"} dispatched`,
+      `End-to-end AI workflow started for ${SYSTEM_META[focus.system].label}. You will receive sequenced stakeholder updates over the next ~60 seconds.`,
+    );
     if (sys === "lockout") {
-      fire(8000,  () => toast("Voice agent online", { description: "Calming the tenant · 4 guided steps pushed." }));
-      fire(18000, () => toast("Landlord on the call", { description: "Mette Holm picked up in 1 min 42 s." }));
-      fire(32000, () => toast.success("Digital key renewed", { description: "12-month Pro plan auto-provisioned (890 DKK)." }));
-      fire(46000, () => toast("Door A1 unlocking…", { description: "Mobile + NFC key delivered to tenant phone." }));
-      fire(58000, () => toast.success("Tenant inside · case closed", { description: "Audit log filed. Resolution time 1m 02s." }));
+      fire(8000,  () => { toast("Voice agent online", { description: "Calming the tenant · 4 guided steps pushed." }); mail("Fridson AI · Voice agent online", "Tenant locked out at Lobby Door A1. AI voice agent engaged, pushing 4 calming guided steps. Landlord Mette Holm being dialed."); });
+      fire(18000, () => { toast("Landlord on the call", { description: "Mette Holm picked up in 1 min 42 s." }); mail("Landlord connected · Lobby A1 lockout", "Mette Holm (landlord) picked up in 1m 42s. Verifying tenant identity and authorizing digital key renewal."); });
+      fire(32000, () => { toast.success("Digital key renewed", { description: "12-month Pro plan auto-provisioned (890 DKK)." }); mail("Digital key renewed · 890 DKK", "12-month Pro plan auto-provisioned. Mobile + NFC credentials issued to tenant phone. Receipt logged to landlord portal."); });
+      fire(46000, () => { toast("Door A1 unlocking…", { description: "Mobile + NFC key delivered to tenant phone." }); mail("Door A1 unlocking", "Lobby Door A1 unlocking now. Mobile + NFC credentials delivered. Live status streaming to dashboard."); });
+      fire(58000, () => { toast.success("Tenant inside · case closed", { description: "Audit log filed. Resolution time 1m 02s." }); mail("Case closed · tenant inside (1m 02s)", "Tenant entered building. Audit log filed. Total resolution: 1 minute 02 seconds. No human dispatch required."); });
     } else if (sys === "roof") {
-      fire(7000,  () => toast("Containment pushed", { description: "Boardroom evacuated · drip trays deployed." }));
-      fire(16000, () => toast("Stakeholders alerted", { description: "Facility, Tryg insurance, tenants, 3 roofers." }));
-      fire(28000, () => toast("Tag & Tæt A/S accepted", { description: "ETA 55 min · OEM membrane on truck." }));
-      fire(42000, () => toast.success("Insurance claim filed", { description: "Tryg case #CL-44218 · photos attached." }));
-      fire(58000, () => toast.success("Crew on site · sealing leak", { description: "Live tracking · ETA repair complete 16:20." }));
+      fire(7000,  () => { toast("Containment pushed", { description: "Boardroom evacuated · drip trays deployed." }); mail("Roof leak · containment active", "Boardroom evacuated. Drip trays deployed. HVAC zone isolated to prevent water spread. Awaiting roofer bids."); });
+      fire(16000, () => { toast("Stakeholders alerted", { description: "Facility, Tryg insurance, tenants, 3 roofers." }); mail("Stakeholders alerted · roof leak", "Facility Manager, Tryg insurance, affected tenants and 3 vetted roofers notified. Bidding window opens in 60s."); });
+      fire(28000, () => { toast("Tag & Tæt A/S accepted", { description: "ETA 55 min · OEM membrane on truck." }); mail("Vendor accepted: Tag & Tæt A/S", "Winning bid: Tag & Tæt A/S. ETA 55 min. OEM EPDM membrane on truck. Crew of 3 dispatched. Cost cap 18.400 DKK."); });
+      fire(42000, () => { toast.success("Insurance claim filed", { description: "Tryg case #CL-44218 · photos attached." }); mail("Insurance claim filed · Tryg #CL-44218", "Claim auto-filed with Tryg (case #CL-44218). Photo evidence, sensor history and vendor quote attached. Adjuster assigned."); });
+      fire(58000, () => { toast.success("Crew on site · sealing leak", { description: "Live tracking · ETA repair complete 16:20." }); mail("Crew on site · sealing leak", "Tag & Tæt A/S crew on site, sealing membrane breach. Live GPS + body-cam tracking enabled. ETA repair complete: 16:20."); });
     } else {
       fire(15000, () => toast(`${winner.name} accepted`, { description: "Job confirmed · technician dispatched." }));
       fire(35000, () => toast("Tenant notified", { description: "SMS + dashboard ping sent." }));
