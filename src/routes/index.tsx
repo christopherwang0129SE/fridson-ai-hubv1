@@ -45,8 +45,10 @@ import {
   MessageSquare,
   ExternalLink,
   ShieldCheck,
+  MessageCircle,
 } from "lucide-react";
 import floorPlan from "@/assets/floor-plan.jpg";
+import { BuildingChat } from "@/components/BuildingChat";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -303,6 +305,7 @@ function Index() {
   const floor = useMemo(() => FLOORS.find((f) => f.id === floorId)!, [floorId]);
   const [demo, setDemo] = useState(false);
   const [tour, setTour] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [alerts, setAlerts] = useState<SensorAlert[]>([]);
   const pushAlert = (a: SensorAlert) =>
     setAlerts((prev) => [a, ...prev].slice(0, 6));
@@ -353,7 +356,13 @@ function Index() {
 
       {!demo && <Header />}
       <div className="flex flex-1 min-h-0">
-        {!demo && <FloorSidebar floorId={floorId} onSelect={setFloorId} />}
+        {!demo && (
+          <FloorSidebar
+            floorId={floorId}
+            onSelect={setFloorId}
+            onOpenChat={() => setChatOpen(true)}
+          />
+        )}
         <main
           className={`flex-1 min-w-0 overflow-hidden ${
             demo ? "p-3" : "px-4 lg:px-6 py-4"
@@ -372,6 +381,8 @@ function Index() {
       </div>
 
       {demo && tour && <Walkthrough onClose={() => setTour(false)} />}
+
+      <BuildingChat open={chatOpen} onClose={() => setChatOpen(false)} />
 
       <button
         onClick={toggleDemo}
@@ -426,9 +437,11 @@ function Header() {
 function FloorSidebar({
   floorId,
   onSelect,
+  onOpenChat,
 }: {
   floorId: string;
   onSelect: (id: string) => void;
+  onOpenChat: () => void;
 }) {
   return (
     <aside className="hidden md:flex w-60 shrink-0 border-r border-border bg-card/40 backdrop-blur-sm sticky top-14 self-start h-[calc(100vh-3.5rem)] flex-col">
@@ -438,6 +451,14 @@ function FloorSidebar({
           Floors
         </div>
         <div className="mt-1 text-sm font-medium">Nordhavn Tower</div>
+        <button
+          onClick={onOpenChat}
+          className="mt-3 w-full h-9 rounded-md text-xs font-semibold inline-flex items-center justify-center gap-1.5 text-primary-foreground shadow-md shadow-primary/30 hover:opacity-90 transition-opacity"
+          style={{ background: "var(--gradient-aurora)" }}
+        >
+          <MessageCircle className="size-3.5" />
+          Ask Fridson
+        </button>
       </div>
       <nav className="flex-1 overflow-y-auto p-2 space-y-1">
         {FLOORS.map((f) => {
