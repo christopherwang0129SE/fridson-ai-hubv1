@@ -611,6 +611,221 @@ function DigitalTwinCard({ floor }: { floor: Floor }) {
   );
 }
 
+// ---------------- Walkthrough overlay ----------------
+
+type TourStep = {
+  selector: string;
+  title: string;
+  body: string;
+  position: "right" | "left" | "below";
+};
+
+const TOUR_STEPS: TourStep[] = [
+  {
+    selector: '[data-tour="twin"]',
+    title: "01 · Sense — Digital twin",
+    body: "Live floor plan with sensor hotspots. Each pulse is a real anomaly the building reported itself.",
+    position: "right",
+  },
+  {
+    selector: '[data-tour="intake"]',
+    title: "02 · Report — AI intake",
+    body: "Tenants snap a photo or speak. The AI classifies, prioritises, and drafts the work order in seconds.",
+    position: "right",
+  },
+  {
+    selector: '[data-tour="workflow"]',
+    title: "03 · Act — Vendor workflow",
+    body: "Agents auto-bid the job to vetted contractors and orchestrate the response end-to-end.",
+    position: "left",
+  },
+];
+
+const STEP_MS = 5000;
+
+function Walkthrough({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState(0);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [paused, setPaused] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  const current = TOUR_STEPS[step];
+
+  // Measure target
+  useEffect(() => {
+    const measure = () => {
+      const el = document.querySelector(current.selector) as HTMLElement | null;
+      if (el) setRect(el.getBoundingClientRect());
+    };
+    measure();
+    const id = window.setTimeout(measure, 60);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.clearTimeout(id);
+      window.removeEventListener("resize", measure);
+    };
+  }, [current.selector]);
+
+  // Auto-advance
+  useEffect(() => {
+    if (paused) return;
+    timerRef.current = window.setTimeout(() => {
+      setStep((s) => (s + 1 < TOUR_STEPS.length ? s + 1 : s));
+    }, STEP_MS);
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+  }, [step, paused]);
+
+  // Esc to close
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight")
+        setStep((s) => Math.min(s + 1, TOUR_STEPS.length - 1));
+      if (e.key === "ArrowLeft") setStep((s) => Math.max(s - 1, 0));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (!rect) return null;
+
+  const pad = 10;
+  const hx = rect.left - pad;
+  const hy = rect.top - pad;
+  const hw = rect.width + pad * 2;
+  const hh = rect.height + pad * 2;
+
+  // Tooltip placement
+  const tipW = 320;
+  const tipH = 150;
+  let tipLeft = hx + hw + 16;
+  let tipTop = hy + hh / 2 - tipH / 2;
+  if (current.position === "left") tipLeft = hx - tipW - 16;
+  if (tipLeft + tipW > window.innerWidth - 8)
+    tipLeft = window.innerWidth - tipW - 8;
+  if (tipLeft < 8) tipLeft = 8;
+  if (tipTop < 8) tipTop = 8;
+  if (tipTop + tipH > window.innerHeight - 8)
+    tipTop = window.innerHeight - tipH - 8;
+
+  const isLast = step === TOUR_STEPS.length - 1;
+
+  return (
+    <div className="fixed inset-0 z-50 pointer-events-none">
+      {/* Dim overlay using box-shadow cutout */}
+      <div
+        className="absolute rounded-2xl pointer-events-auto transition-all duration-500 ease-out"
+        style={{
+          left: hx,
+          top: hy,
+          width: hw,
+          height: hh,
+          boxShadow: "0 0 0 9999px rgba(4,6,18,0.72)",
+          outline: "2px solid hsl(var(--primary))",
+          outlineOffset: "0px",
+        }}
+        onClick={() => setPaused((p) => !p)}
+      />
+      {/* Glow ring */}
+      <div
+        className="absolute rounded-2xl pointer-events-none transition-all duration-500 ease-out animate-pulse"
+        style={{
+          left: hx - 4,
+          top: hy - 4,
+          width: hw + 8,
+          height: hh + 8,
+          boxShadow:
+            "0 0 0 1px hsl(var(--accent) / 0.6), 0 0 40px 4px hsl(var(--primary) / 0.45)",
+        }}
+      />
+
+      {/* Tooltip */}
+      <div
+        className="absolute pointer-events-auto rounded-xl border border-border bg-card/95 backdrop-blur-md shadow-2xl shadow-primary/30 p-4 transition-all duration-500 ease-out animate-fade-in"
+        style={{ left: tipLeft, top: tipTop, width: tipW }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              Guided tour · {step + 1} / {TOUR_STEPS.length}
+            </div>
+            <h3 className="mt-1 text-sm font-semibold tracking-tight">
+              {current.title}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="size-6 rounded-md grid place-items-center text-muted-foreground hover:text-foreground hover:bg-secondary"
+            aria-label="Close walkthrough"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+          {current.body}
+        </p>
+
+        {/* progress */}
+        <div className="mt-3 flex items-center gap-1.5">
+          {TOUR_STEPS.map((_, i) => (
+            <div
+              key={i}
+              className="flex-1 h-1 rounded-full bg-secondary overflow-hidden"
+            >
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: i < step ? "100%" : i === step ? (paused ? "30%" : "100%") : "0%",
+                  transitionDuration:
+                    i === step && !paused ? `${STEP_MS}ms` : "200ms",
+                  background: "var(--gradient-aurora)",
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-3 flex items-center justify-between">
+          <button
+            onClick={() => setPaused((p) => !p)}
+            className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground"
+          >
+            {paused ? "▸ Resume" : "❚❚ Pause"}
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0}
+              className="text-[11px] px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground disabled:opacity-30"
+            >
+              Back
+            </button>
+            {isLast ? (
+              <button
+                onClick={onClose}
+                className="text-[11px] px-3 py-1 rounded-md text-primary-foreground"
+                style={{ background: "var(--gradient-aurora)" }}
+              >
+                Finish
+              </button>
+            ) : (
+              <button
+                onClick={() => setStep((s) => s + 1)}
+                className="text-[11px] px-3 py-1 rounded-md text-primary-foreground"
+                style={{ background: "var(--gradient-aurora)" }}
+              >
+                Next
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MiniStat({
   label,
   value,
