@@ -1953,25 +1953,19 @@ function WorkflowCard({
             accent="magenta"
           >
       {/* Potential failure alerts */}
+      {alerts.length > 0 && (
       <div>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             <AlertTriangle className="size-3" />
             Potential failures
           </div>
-          {alerts.length > 0 && (
-            <span className="text-[10px] font-mono text-warning flex items-center gap-1">
-              <span className="size-1.5 rounded-full bg-warning animate-pulse" />
-              {alerts.length}
-            </span>
-          )}
+          <span className="text-[10px] font-mono text-warning flex items-center gap-1">
+            <span className="size-1.5 rounded-full bg-warning animate-pulse" />
+            {alerts.length}
+          </span>
         </div>
-        {alerts.length === 0 ? (
-          <div className="rounded-md border border-dashed border-border bg-secondary/20 px-3 py-3 text-[11px] font-mono text-muted-foreground text-center">
-            No threshold breaches.
-          </div>
-        ) : (
-          <ol className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+        <ol className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
             {alerts.map((a) => (
               <li
                 key={a.id}
@@ -1999,28 +1993,21 @@ function WorkflowCard({
                   {a.value}
                   <span className="text-muted-foreground"> / {a.threshold}</span>
                 </span>
-                <span className="font-mono text-[10px] text-muted-foreground shrink-0">
-                  {new Date(a.at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}
-                </span>
               </li>
             ))}
           </ol>
-        )}
       </div>
+      )}
 
       {/* Bidder leaderboard */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             {focus?.system === "lockout"
-              ? `Support channels · ${playbook.vendors.length} options`
-              : `Live bids · ${playbook.vendors.length} contractors`}
+              ? "Support channels"
+              : "Live bids"}
           </div>
-          <span className="text-[10px] font-mono text-magenta">ranked by score</span>
+          <span className="text-[10px] font-mono text-magenta">{playbook.vendors.length} ranked</span>
         </div>
         <ul className="space-y-1.5">
           {playbook.vendors.map((v) => {
@@ -2080,9 +2067,6 @@ function WorkflowCard({
                     <Star className="size-3" /> {v.rating}
                   </span>
                 </div>
-                <div className="mt-1 text-[10px] font-mono text-muted-foreground truncate">
-                  {v.travel} · {v.phone}
-                </div>
               </li>
             );
           })}
@@ -2093,23 +2077,18 @@ function WorkflowCard({
       <div className="mt-auto">
         {!approved ? (
           <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
-              <div className="text-xs text-muted-foreground leading-relaxed flex-1">
-                <span className="text-foreground font-medium">Approval pending.</span>{" "}
-                Dispatch <span className="text-foreground">{winner.name}</span> ·{" "}
-                <span className="font-mono">{winner.eta}</span> ·{" "}
-                <span className="font-mono">{winner.price}</span>
-              </div>
+            <div className="flex items-center gap-2 text-xs">
+              <AlertTriangle className="size-4 text-warning shrink-0" />
+              <span className="font-medium">Approve {winner.name}?</span>
             </div>
-            <div className="mt-2.5 grid grid-cols-2 gap-2">
+            <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 onClick={approveAndCall}
                 className="h-9 rounded-md text-xs font-semibold inline-flex items-center justify-center gap-1.5 text-primary-foreground shadow-md shadow-primary/30 hover:opacity-90"
                 style={{ background: "var(--gradient-aurora)" }}
               >
                 <Phone className="size-3.5" />
-                Yes · approve & call
+                Yes · call
               </button>
               <button
                 className="h-9 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground"
