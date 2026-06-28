@@ -1837,11 +1837,13 @@ function WorkflowCard({
   alerts,
   dispatchedAt,
   onDispatch,
+  onSelectScenario,
 }: {
   floor: Floor;
   alerts: SensorAlert[];
   dispatchedAt: number | null;
   onDispatch: (label: string, vendorName: string) => void;
+  onSelectScenario?: (s: "lockout" | "roof") => void;
 }) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
