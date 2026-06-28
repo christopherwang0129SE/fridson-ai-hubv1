@@ -287,14 +287,14 @@ function Index() {
           }`}
         >
           <div className={`grid grid-cols-3 h-full min-h-0 ${demo ? "gap-3" : "gap-4"}`}>
-            <div data-tour="twin" className="contents">
-              <DigitalTwinCard floor={floor} />
+            <div data-tour="twin" className="min-h-0 min-w-0 flex">
+              <div className="flex-1 min-w-0"><DigitalTwinCard floor={floor} /></div>
             </div>
-            <div data-tour="intake" className="contents">
-              <IntakeCard floor={floor} />
+            <div data-tour="intake" className="min-h-0 min-w-0 flex">
+              <div className="flex-1 min-w-0"><IntakeCard floor={floor} /></div>
             </div>
-            <div data-tour="workflow" className="contents">
-              <WorkflowCard floor={floor} />
+            <div data-tour="workflow" className="min-h-0 min-w-0 flex">
+              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} /></div>
             </div>
           </div>
         </main>
