@@ -1999,7 +1999,9 @@ function WorkflowCard({
       <div>
         <div className="flex items-center justify-between mb-2">
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            Live bids · {playbook.vendors.length} contractors
+            {focus?.system === "lockout"
+              ? `Support channels · ${playbook.vendors.length} options`
+              : `Live bids · ${playbook.vendors.length} contractors`}
           </div>
           <span className="text-[10px] font-mono text-magenta">ranked by score</span>
         </div>
