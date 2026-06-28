@@ -1095,12 +1095,10 @@ function IntakeCard({
       accent="primary"
     >
       {/* Mode tabs */}
-      <div className="grid grid-cols-4 gap-1 p-1 rounded-lg bg-secondary/40 border border-border">
+      <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-secondary/40 border border-border">
         {([
           { k: "voice", icon: <Mic className="size-3.5" />, label: "Voice" },
           { k: "camera", icon: <Camera className="size-3.5" />, label: "Camera" },
-          { k: "sensor", icon: <Radio className="size-3.5" />, label: "Sensor" },
-          { k: "qr", icon: <QrCode className="size-3.5" />, label: "QR" },
         ] as { k: IntakeMode; icon: React.ReactNode; label: string }[]).map((t) => (
           <button
             key={t.k}
@@ -1271,24 +1269,22 @@ function IntakeCard({
             borderColor: "color-mix(in oklch, var(--primary) 40%, transparent)",
           }}
         >
-          <div className="flex items-center gap-2 text-primary text-[10px] font-mono uppercase tracking-widest">
-            <Sparkles className="size-3" />
-            AI triage
-          </div>
-          <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-            <Tag label="Type" value={focus ? SYSTEM_META[focus.system].label : "—"} tone="info" />
-            <Tag
-              label="Priority"
-              value={
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Sparkles className="size-3.5 text-primary shrink-0" />
+              <span className="text-xs font-medium truncate">
+                {focus ? SYSTEM_META[focus.system].label : "—"}
+              </span>
+            </div>
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
                 focus?.status === "critical"
-                  ? "Critical"
-                  : focus?.status === "warning"
-                    ? "High"
-                    : "Low"
-              }
-              tone={focus?.status === "critical" ? "destructive" : "warning"}
-            />
-            <Tag label="Confidence" value="92%" tone="success" />
+                  ? "bg-destructive/20 text-destructive"
+                  : "bg-warning/20 text-warning"
+              }`}
+            >
+              {focus?.status === "critical" ? "Critical" : "High"}
+            </span>
           </div>
           <button
             className="mt-3 w-full h-9 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-primary-foreground shadow-lg shadow-primary/30"
