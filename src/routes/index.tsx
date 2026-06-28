@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -25,6 +25,7 @@ import {
   Layers,
   Maximize2,
   Minimize2,
+  X,
 } from "lucide-react";
 import floorPlan from "@/assets/floor-plan.jpg";
 
@@ -251,10 +252,12 @@ function Index() {
   const [floorId, setFloorId] = useState(FLOORS[0].id);
   const floor = useMemo(() => FLOORS.find((f) => f.id === floorId)!, [floorId]);
   const [demo, setDemo] = useState(false);
+  const [tour, setTour] = useState(false);
 
   const toggleDemo = () => {
     const next = !demo;
     setDemo(next);
+    setTour(next);
     try {
       if (next && !document.fullscreenElement) {
         document.documentElement.requestFullscreen?.();
@@ -284,12 +287,20 @@ function Index() {
           }`}
         >
           <div className={`grid grid-cols-3 h-full min-h-0 ${demo ? "gap-3" : "gap-4"}`}>
-            <DigitalTwinCard floor={floor} />
-            <IntakeCard floor={floor} />
-            <WorkflowCard floor={floor} />
+            <div data-tour="twin" className="contents">
+              <DigitalTwinCard floor={floor} />
+            </div>
+            <div data-tour="intake" className="contents">
+              <IntakeCard floor={floor} />
+            </div>
+            <div data-tour="workflow" className="contents">
+              <WorkflowCard floor={floor} />
+            </div>
           </div>
         </main>
       </div>
+
+      {demo && tour && <Walkthrough onClose={() => setTour(false)} />}
 
       <button
         onClick={toggleDemo}
