@@ -135,7 +135,7 @@ export function BuildingChat({ open, onClose }: { open: boolean; onClose: () => 
                 }
                 return (
                   <Message from="assistant" key={m.id}>
-                    <MessageContent variant="flat" className="px-0">
+                    <MessageContent className="bg-transparent px-0 py-0">
                       <MessageResponse>{text}</MessageResponse>
                     </MessageContent>
                   </Message>
@@ -152,12 +152,7 @@ export function BuildingChat({ open, onClose }: { open: boolean; onClose: () => 
         </Conversation>
 
         <div className="border-t border-border p-3 shrink-0">
-          <PromptInput
-            onSubmit={(e) => {
-              e.preventDefault();
-              submit(input);
-            }}
-          >
+          <PromptInput onSubmit={(message) => submit(message.text ?? input)}>
             <PromptInputTextarea
               ref={taRef}
               value={input}
