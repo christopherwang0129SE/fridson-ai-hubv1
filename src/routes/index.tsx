@@ -1780,6 +1780,29 @@ function genericSteps(vendor: string, asset: string) {
   ];
 }
 
+// ---------------- AI guidance (calm action plan) ----------------
+
+const AI_GUIDANCE: Partial<Record<SystemKey, { title: string; steps: string[] }>> = {
+  lockout: {
+    title: "Stay calm — guided steps while we resolve this",
+    steps: [
+      "Take a breath. You're safe. The building knows you're at Door A1.",
+      "Stay near the QR plate so the lobby camera keeps you in view.",
+      "We're dialling your landlord now — answer the incoming call.",
+      "Your digital key is being auto-renewed online. No locksmith needed.",
+    ],
+  },
+  roof: {
+    title: "Containment plan — follow these 4 steps now",
+    steps: [
+      "Evacuate the boardroom and close the door behind you.",
+      "Place the bucket from the AV cabinet under the dripping tile.",
+      "Unplug electronics within 2 m of the leak — power is being isolated.",
+      "Stay on the floor — the roofer and insurer will call within 5 min.",
+    ],
+  },
+};
+
 function WorkflowCard({
   floor,
   alerts,
