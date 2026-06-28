@@ -2235,6 +2235,31 @@ function WorkflowCard({
       {/* Outcome panel (after approval) + simulation control */}
       <div className="mt-auto space-y-2">
         {approved && <ScenarioOutcome system={focus?.system ?? "lockout"} winner={winner} />}
+        {onSelectScenario && (focus?.system === "lockout" || focus?.system === "roof") && (
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <span className="text-muted-foreground uppercase tracking-wider">Scenario</span>
+            <button
+              onClick={() => onSelectScenario("lockout")}
+              className={`flex-1 h-6 rounded-md border transition ${
+                focus?.system === "lockout"
+                  ? "border-accent/60 bg-accent/15 text-accent"
+                  : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
+            >
+              Lobby lockout
+            </button>
+            <button
+              onClick={() => onSelectScenario("roof")}
+              className={`flex-1 h-6 rounded-md border transition ${
+                focus?.system === "roof"
+                  ? "border-accent/60 bg-accent/15 text-accent"
+                  : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
+            >
+              Boardroom roof leak
+            </button>
+          </div>
+        )}
         <button
           onClick={runSimulation}
           className="w-full h-8 rounded-md text-[11px] font-medium border border-accent/50 text-accent hover:bg-accent/10 inline-flex items-center justify-center gap-1.5"
