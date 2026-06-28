@@ -17,7 +17,6 @@ import {
   Clock,
   DollarSign,
   Star,
-  Wind,
   Coffee,
   Refrigerator,
   Printer,
@@ -37,6 +36,13 @@ import {
   Zap,
   Volume2,
   Droplets,
+  KeyRound,
+  CloudRain,
+  Phone,
+  Mail,
+  MessageSquare,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import floorPlan from "@/assets/floor-plan.jpg";
 
@@ -62,7 +68,14 @@ export const Route = createFileRoute("/")({
 
 // ---------------- Floors & systems ----------------
 
-type SystemKey = "hvac" | "coffee" | "fridge" | "office" | "lighting" | "plumbing";
+type SystemKey =
+  | "lockout"
+  | "roof"
+  | "coffee"
+  | "fridge"
+  | "office"
+  | "lighting"
+  | "plumbing";
 
 type SensorAlert = {
   id: string;
@@ -78,7 +91,18 @@ const SYSTEM_META: Record<
   SystemKey,
   { label: string; icon: React.ReactNode; color: string; tint: string }
 > = {
-  hvac: { label: "HVAC", icon: <Wind className="size-3.5" />, color: "bg-info", tint: "text-info" },
+  lockout: {
+    label: "Lockout / Access",
+    icon: <KeyRound className="size-3.5" />,
+    color: "bg-info",
+    tint: "text-info",
+  },
+  roof: {
+    label: "Roof / Water ingress",
+    icon: <CloudRain className="size-3.5" />,
+    color: "bg-destructive",
+    tint: "text-destructive",
+  },
   coffee: {
     label: "Coffee machine",
     icon: <Coffee className="size-3.5" />,
@@ -141,13 +165,14 @@ const FLOORS: Floor[] = [
     hotspots: [
       {
         id: "ahu-04",
-        top: "30%",
-        left: "72%",
-        label: "AHU-04",
-        zone: "East Wing · Ceiling",
+        top: "55%",
+        left: "18%",
+        label: "Main entrance",
+        zone: "Lobby · Door A1",
         status: "critical",
-        system: "hvac",
-        detail: "Bearing vibration +15%. Failure predicted in 9 days.",
+        system: "lockout",
+        detail:
+          "Tenant #214 locked out — digital key subscription expired 12 min ago. 3 retries on QR-handle.",
       },
       {
         id: "kitch-leak",
@@ -221,11 +246,12 @@ const FLOORS: Floor[] = [
         id: "ahu-3",
         top: "35%",
         left: "70%",
-        label: "AHU-09",
-        zone: "Boardroom",
-        status: "ok",
-        system: "hvac",
-        detail: "Air quality 412 ppm CO₂. Within target.",
+        label: "Ceiling · Boardroom",
+        zone: "Boardroom · NE corner",
+        status: "critical",
+        system: "roof",
+        detail:
+          "Water ingress detected above boardroom ceiling tile. 2.4 L/h estimated, trending up after rainfall.",
       },
     ],
   },
@@ -259,11 +285,12 @@ const FLOORS: Floor[] = [
         id: "chiller-rf",
         top: "45%",
         left: "65%",
-        label: "Chiller-01",
-        zone: "Rooftop",
-        status: "ok",
-        system: "hvac",
-        detail: "Δt 6.1°C. Efficiency at design point.",
+        label: "Roof membrane",
+        zone: "Rooftop · NE quadrant",
+        status: "warning",
+        system: "roof",
+        detail:
+          "Moisture sensor under membrane shows 38% saturation. Likely seam failure near drain D-3.",
       },
     ],
   },
@@ -338,7 +365,7 @@ function Index() {
               <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} onDispatch={dispatchWorkflow} /></div>
             </div>
             <div data-tour="workflow" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} /></div>
+              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} onDispatch={dispatchWorkflow} /></div>
             </div>
           </div>
         </main>
@@ -1602,7 +1629,8 @@ function SensorPanel({
 }
 
 const TRANSCRIPTS: Record<SystemKey, string> = {
-  hvac: '"Loud rattling sound from the ventilation in the east wing. Started about an hour ago — getting worse."',
+  lockout: '"I\'m standing at the main entrance — my badge won\'t open the door and the app says my key expired. There are two of us out here."',
+  roof: '"There\'s water dripping from the boardroom ceiling — a tile is sagging and the carpet is getting wet. It started during the rain this morning."',
   coffee: '"The espresso machine in the pantry won\'t pull a shot. Pressure gauge looks low and it\'s making a hissing noise."',
   fridge: '"The kitchen fridge feels warm and the milk has gone off. The compressor keeps clicking on and off."',
   office: '"The big printer near the print bay jams every other job. It\'s eating paper and the rollers sound rough."',
@@ -1643,74 +1671,102 @@ function Tag({
 
 type VendorSet = {
   service: string;
-  vendors: { name: string; eta: string; price: string; rating: number; badge: string | null; selected: boolean }[];
+  vendors: {
+    name: string;
+    eta: string;
+    price: string;
+    rating: number;
+    badge: string | null;
+    selected: boolean;
+    phone: string;
+    travel: string;
+  }[];
   steps: { title: string; detail: string; status: "done" | "active" | "pending"; time: string; icon: React.ReactNode }[];
 };
 
 const VENDOR_PLAYBOOK: Record<SystemKey, VendorSet> = {
-  hvac: {
-    service: "HVAC service",
+  lockout: {
+    service: "Lockout & digital access",
     vendors: [
-      { name: "Klimatek HVAC ApS", eta: "42 min", price: "4 200 DKK", rating: 4.9, badge: "BEST MATCH", selected: true },
-      { name: "Nord Ventilation", eta: "1h 10m", price: "3 850 DKK", rating: 4.6, badge: "CHEAPEST", selected: false },
-      { name: "CPH Service Group", eta: "55 min", price: "4 900 DKK", rating: 4.8, badge: null, selected: false },
+      { name: "Låsesmeden CPH", eta: "18 min", price: "1 450 DKK", rating: 4.9, badge: "BEST MATCH", selected: true, phone: "+4532112233", travel: "3.1 km · Nørrebro" },
+      { name: "Nord Lock & Key",  eta: "26 min", price: "1 250 DKK", rating: 4.6, badge: "CHEAPEST",  selected: false, phone: "+4533445566", travel: "5.8 km · Østerbro" },
+      { name: "Sikker24 Locksmith", eta: "22 min", price: "1 700 DKK", rating: 4.8, badge: "24/7", selected: false, phone: "+4570201234", travel: "4.4 km · City" },
     ],
-    steps: hvacSteps(),
+    steps: lockoutSteps(),
+  },
+  roof: {
+    service: "Roof leak emergency",
+    vendors: [
+      { name: "Tag & Tæt A/S", eta: "55 min", price: "6 800 DKK", rating: 4.9, badge: "BEST MATCH", selected: true, phone: "+4570123344", travel: "7.2 km · Valby" },
+      { name: "Phoenix Tagdækning", eta: "1h 25m", price: "5 600 DKK", rating: 4.6, badge: "CHEAPEST", selected: false, phone: "+4536998877", travel: "11.4 km · Glostrup" },
+      { name: "Icopal Service", eta: "1h", price: "7 400 DKK", rating: 4.8, badge: "OEM MEMBRANE", selected: false, phone: "+4544556677", travel: "8.0 km · Hvidovre" },
+    ],
+    steps: roofSteps(),
   },
   coffee: {
     service: "Coffee machine service",
     vendors: [
-      { name: "Caffè Care Nordic", eta: "1h 20m", price: "1 850 DKK", rating: 4.9, badge: "BEST MATCH", selected: true },
-      { name: "BaristaFix DK", eta: "2h", price: "1 450 DKK", rating: 4.5, badge: "CHEAPEST", selected: false },
-      { name: "La Marzocco CPH", eta: "Tomorrow", price: "2 100 DKK", rating: 5.0, badge: "OEM", selected: false },
+      { name: "Caffè Care Nordic", eta: "1h 20m", price: "1 850 DKK", rating: 4.9, badge: "BEST MATCH", selected: true,  phone: "+4533221100", travel: "6.2 km" },
+      { name: "BaristaFix DK",     eta: "2h",     price: "1 450 DKK", rating: 4.5, badge: "CHEAPEST",   selected: false, phone: "+4533112244", travel: "9.0 km" },
+      { name: "La Marzocco CPH",   eta: "Tomorrow",price: "2 100 DKK", rating: 5.0, badge: "OEM",       selected: false, phone: "+4570707070", travel: "12 km" },
     ],
     steps: genericSteps("Caffè Care Nordic", "espresso machine"),
   },
   fridge: {
     service: "Refrigeration repair",
     vendors: [
-      { name: "Cool Solutions A/S", eta: "55 min", price: "2 600 DKK", rating: 4.8, badge: "BEST MATCH", selected: true },
-      { name: "FrostTek Service", eta: "1h 30m", price: "2 200 DKK", rating: 4.4, badge: "CHEAPEST", selected: false },
-      { name: "Nordic Cooling", eta: "1h 10m", price: "2 850 DKK", rating: 4.7, badge: null, selected: false },
+      { name: "Cool Solutions A/S", eta: "55 min",  price: "2 600 DKK", rating: 4.8, badge: "BEST MATCH", selected: true,  phone: "+4533998811", travel: "5.5 km" },
+      { name: "FrostTek Service",   eta: "1h 30m",  price: "2 200 DKK", rating: 4.4, badge: "CHEAPEST",   selected: false, phone: "+4533887766", travel: "10 km" },
+      { name: "Nordic Cooling",     eta: "1h 10m",  price: "2 850 DKK", rating: 4.7, badge: null,         selected: false, phone: "+4533776655", travel: "7.4 km" },
     ],
     steps: genericSteps("Cool Solutions A/S", "kitchen fridge"),
   },
   office: {
     service: "Office equipment service",
     vendors: [
-      { name: "Konica MFP Care", eta: "2h", price: "1 400 DKK", rating: 4.7, badge: "BEST MATCH", selected: true },
-      { name: "PrintHub CPH", eta: "3h", price: "1 100 DKK", rating: 4.3, badge: "CHEAPEST", selected: false },
-      { name: "Office Service Plus", eta: "Same day", price: "1 650 DKK", rating: 4.6, badge: null, selected: false },
+      { name: "Konica MFP Care",     eta: "2h",       price: "1 400 DKK", rating: 4.7, badge: "BEST MATCH", selected: true,  phone: "+4533665544", travel: "8 km" },
+      { name: "PrintHub CPH",        eta: "3h",       price: "1 100 DKK", rating: 4.3, badge: "CHEAPEST",   selected: false, phone: "+4533554433", travel: "11 km" },
+      { name: "Office Service Plus", eta: "Same day", price: "1 650 DKK", rating: 4.6, badge: null,         selected: false, phone: "+4533443322", travel: "9.2 km" },
     ],
     steps: genericSteps("Konica MFP Care", "printer C-22"),
   },
   lighting: {
     service: "Lighting service",
     vendors: [
-      { name: "Lumen Nordic", eta: "1h 30m", price: "1 200 DKK", rating: 4.8, badge: "BEST MATCH", selected: true },
-      { name: "ElectroFix DK", eta: "1h", price: "1 050 DKK", rating: 4.5, badge: "FASTEST", selected: false },
-      { name: "Light & Power", eta: "2h", price: "1 400 DKK", rating: 4.6, badge: null, selected: false },
+      { name: "Lumen Nordic",  eta: "1h 30m", price: "1 200 DKK", rating: 4.8, badge: "BEST MATCH", selected: true,  phone: "+4533221199", travel: "6 km" },
+      { name: "ElectroFix DK", eta: "1h",     price: "1 050 DKK", rating: 4.5, badge: "FASTEST",    selected: false, phone: "+4533221188", travel: "4.2 km" },
+      { name: "Light & Power", eta: "2h",     price: "1 400 DKK", rating: 4.6, badge: null,          selected: false, phone: "+4533221177", travel: "8.6 km" },
     ],
     steps: genericSteps("Lumen Nordic", "zone B lighting"),
   },
   plumbing: {
     service: "Plumbing service",
     vendors: [
-      { name: "Rør & Vand ApS", eta: "38 min", price: "2 100 DKK", rating: 4.9, badge: "BEST MATCH", selected: true },
-      { name: "AquaService CPH", eta: "1h", price: "1 800 DKK", rating: 4.6, badge: "CHEAPEST", selected: false },
-      { name: "Nordic Plumb", eta: "50 min", price: "2 300 DKK", rating: 4.7, badge: null, selected: false },
+      { name: "Rør & Vand ApS",  eta: "38 min", price: "2 100 DKK", rating: 4.9, badge: "BEST MATCH", selected: true,  phone: "+4533887700", travel: "3.8 km" },
+      { name: "AquaService CPH", eta: "1h",     price: "1 800 DKK", rating: 4.6, badge: "CHEAPEST",   selected: false, phone: "+4533887711", travel: "6.4 km" },
+      { name: "Nordic Plumb",    eta: "50 min", price: "2 300 DKK", rating: 4.7, badge: null,          selected: false, phone: "+4533887722", travel: "5.1 km" },
     ],
     steps: genericSteps("Rør & Vand ApS", "pantry sink"),
   },
 };
 
-function hvacSteps() {
+function lockoutSteps() {
   return [
-    { title: "Incident triaged", detail: "AHU-04 · HVAC · High priority", status: "done" as const, time: "14:02", icon: <CheckCircle2 className="size-3.5" /> },
-    { title: "Vendor bidding opened", detail: "12 contractors invited · 3 responded", status: "done" as const, time: "14:03", icon: <Activity className="size-3.5" /> },
-    { title: "Klimatek HVAC selected", detail: "Best score: reliability × cost × ETA", status: "active" as const, time: "14:04", icon: <Wrench className="size-3.5" /> },
-    { title: "Tenant + compliance notified", detail: "SMS sent · safety log queued", status: "pending" as const, time: "—", icon: <FileText className="size-3.5" /> },
-    { title: "Resolution & documentation", detail: "Auto-close + invoice reconciliation", status: "pending" as const, time: "—", icon: <CheckCircle2 className="size-3.5" /> },
+    { title: "Lockout detected", detail: "Door A1 · expired digital key for tenant #214", status: "done" as const, time: "14:02", icon: <CheckCircle2 className="size-3.5" /> },
+    { title: "Locksmiths bidding", detail: "8 24/7 locksmiths invited · 3 responded", status: "done" as const, time: "14:03", icon: <Activity className="size-3.5" /> },
+    { title: "Låsesmeden CPH selected", detail: "Best score: 18 min ETA × rating 4.9", status: "active" as const, time: "14:04", icon: <KeyRound className="size-3.5" /> },
+    { title: "Digital key renewed", detail: "12-month subscription auto-provisioned", status: "pending" as const, time: "—", icon: <ShieldCheck className="size-3.5" /> },
+    { title: "Tenant unlocked & notified", detail: "New mobile key + SMS confirmation", status: "pending" as const, time: "—", icon: <CheckCircle2 className="size-3.5" /> },
+  ];
+}
+
+function roofSteps() {
+  return [
+    { title: "Roof leak triaged", detail: "Boardroom ceiling · water ingress · critical", status: "done" as const, time: "14:02", icon: <CheckCircle2 className="size-3.5" /> },
+    { title: "Stakeholders alerted", detail: "Facility manager, insurer, tenants, roofer pool", status: "done" as const, time: "14:03", icon: <Mail className="size-3.5" /> },
+    { title: "Tag & Tæt A/S selected", detail: "Best score: certified membrane × ETA 55 min", status: "active" as const, time: "14:04", icon: <Wrench className="size-3.5" /> },
+    { title: "Containment & evacuation", detail: "Boardroom cleared · drip trays deployed", status: "pending" as const, time: "—", icon: <AlertTriangle className="size-3.5" /> },
+    { title: "Permanent repair & insurance", detail: "Membrane reseal + claim file auto-opened", status: "pending" as const, time: "—", icon: <FileText className="size-3.5" /> },
   ];
 }
 
@@ -1728,18 +1784,55 @@ function WorkflowCard({
   floor,
   alerts,
   dispatchedAt,
+  onDispatch,
 }: {
   floor: Floor;
   alerts: SensorAlert[];
   dispatchedAt: number | null;
+  onDispatch: (label: string, vendorName: string) => void;
 }) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
     floor.hotspots.find((h) => h.status === "warning") ??
     floor.hotspots[0];
 
-  const playbook = focus ? VENDOR_PLAYBOOK[focus.system] : VENDOR_PLAYBOOK.hvac;
+  const playbook = focus ? VENDOR_PLAYBOOK[focus.system] : VENDOR_PLAYBOOK.lockout;
   const winner = playbook.vendors.find((v) => v.selected) ?? playbook.vendors[0];
+
+  // Local approval state — resets when scenario (focus) changes
+  const [approved, setApproved] = useState(false);
+  useEffect(() => {
+    setApproved(false);
+  }, [focus?.id]);
+
+  const approveAndCall = () => {
+    setApproved(true);
+    if (!dispatchedAt && focus) {
+      onDispatch(SYSTEM_META[focus.system].label, winner.name);
+    }
+    // Direct call — opens the OS dialer / softphone
+    try {
+      window.location.href = `tel:${winner.phone.replace(/\s+/g, "")}`;
+    } catch {
+      /* ignore */
+    }
+    if (focus?.system === "lockout") {
+      window.setTimeout(() => {
+        toast.success("Digital key renewed", {
+          description: "12-month subscription auto-provisioned to tenant #214.",
+          duration: 4500,
+        });
+      }, 1800);
+    }
+    if (focus?.system === "roof") {
+      window.setTimeout(() => {
+        toast.success("Stakeholders notified", {
+          description: "Facility, insurer, tenants & 3 roofers received the alert.",
+          duration: 4500,
+        });
+      }, 1800);
+    }
+  };
 
   // Animate execution progress after dispatch
   const [progress, setProgress] = useState(0);
@@ -1898,6 +1991,9 @@ function WorkflowCard({
                     <Star className="size-3" /> {v.rating}
                   </span>
                 </div>
+                <div className="mt-1 text-[10px] font-mono text-muted-foreground truncate">
+                  {v.travel} · {v.phone}
+                </div>
               </li>
             );
           })}
@@ -1955,21 +2051,156 @@ function WorkflowCard({
         </ol>
       </div>
 
-      <div className="mt-auto rounded-lg border border-warning/30 bg-warning/10 p-3 flex items-start gap-3">
-        <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
-        <div className="text-xs text-muted-foreground leading-relaxed">
-          <span className="text-foreground font-medium">
-            {dispatchedAt ? "Dispatched · live tracking" : "Approval pending."}
-          </span>{" "}
-          {dispatchedAt
-            ? `${winner.name} on the way. Push notifications sent.`
-            : `${winner.name} dispatches in `}
-          {!dispatchedAt && (
-            <span className="font-mono text-warning">02:14</span>
-          )}
-          {!dispatchedAt && " if no override."}
-        </div>
+      {/* Approval + outcome */}
+      <div className="mt-auto space-y-2">
+        {!approved ? (
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
+              <div className="text-xs text-muted-foreground leading-relaxed flex-1">
+                <span className="text-foreground font-medium">Approval pending.</span>{" "}
+                Dispatch <span className="text-foreground">{winner.name}</span> ·{" "}
+                <span className="font-mono">{winner.eta}</span> ·{" "}
+                <span className="font-mono">{winner.price}</span>
+              </div>
+            </div>
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              <button
+                onClick={approveAndCall}
+                className="h-9 rounded-md text-xs font-semibold inline-flex items-center justify-center gap-1.5 text-primary-foreground shadow-md shadow-primary/30 hover:opacity-90"
+                style={{ background: "var(--gradient-aurora)" }}
+              >
+                <Phone className="size-3.5" />
+                Yes · approve & call
+              </button>
+              <button
+                className="h-9 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground"
+                onClick={() => toast("Override sent", { description: "AI will re-bid the job." })}
+              >
+                No · re-bid
+              </button>
+            </div>
+          </div>
+        ) : (
+          <ScenarioOutcome system={focus?.system ?? "lockout"} winner={winner} />
+        )}
       </div>
     </CardShell>
+  );
+}
+
+// ---------------- Scenario-specific outcome ----------------
+
+function ScenarioOutcome({
+  system,
+  winner,
+}: {
+  system: SystemKey;
+  winner: VendorSet["vendors"][number];
+}) {
+  if (system === "lockout") {
+    return (
+      <div
+        className="rounded-lg border border-success/40 p-3"
+        style={{
+          background:
+            "linear-gradient(135deg, color-mix(in oklch, var(--success) 16%, transparent), transparent)",
+        }}
+      >
+        <div className="flex items-center gap-2 text-success text-[10px] font-mono uppercase tracking-widest">
+          <ShieldCheck className="size-3" />
+          Digital key renewed online
+        </div>
+        <div className="mt-2 text-xs leading-relaxed">
+          <span className="font-semibold">Tenant #214</span> · Door A1 ·{" "}
+          <span className="text-success">12-month plan auto-provisioned</span>
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-1.5 text-[10px] font-mono">
+          <Tag label="Plan" value="Pro 12m" tone="success" />
+          <Tag label="Charge" value="890 DKK" tone="info" />
+          <Tag label="Key" value="Mobile + NFC" tone="info" />
+        </div>
+        <div className="mt-2.5 flex items-center gap-2">
+          <a
+            href={`tel:${winner.phone}`}
+            className="flex-1 h-8 rounded-md text-[11px] font-medium inline-flex items-center justify-center gap-1.5 text-primary-foreground"
+            style={{ background: "var(--gradient-aurora)" }}
+          >
+            <Phone className="size-3" />
+            Call {winner.name}
+          </a>
+          <a
+            href="#"
+            className="flex-1 h-8 rounded-md text-[11px] font-medium inline-flex items-center justify-center gap-1.5 border border-border hover:text-foreground text-muted-foreground"
+          >
+            <ExternalLink className="size-3" />
+            Open key portal
+          </a>
+        </div>
+      </div>
+    );
+  }
+  if (system === "roof") {
+    const stakeholders = [
+      { who: "Facility manager", how: "SMS + call", icon: <Phone className="size-3" />, action: "tel:+4530112233", label: "Call" },
+      { who: "Insurance (Tryg)", how: "Claim filed", icon: <FileText className="size-3" />, action: "#", label: "Open claim" },
+      { who: "Boardroom tenants", how: "Email + push", icon: <Mail className="size-3" />, action: "mailto:tenants@nordhavn.dk", label: "Email" },
+      { who: "Roofer · Tag & Tæt", how: "Dispatched", icon: <MessageSquare className="size-3" />, action: `tel:${winner.phone}`, label: "Call" },
+    ];
+    return (
+      <div
+        className="rounded-lg border border-destructive/40 p-3"
+        style={{
+          background:
+            "linear-gradient(135deg, color-mix(in oklch, var(--destructive) 14%, transparent), transparent)",
+        }}
+      >
+        <div className="flex items-center gap-2 text-destructive text-[10px] font-mono uppercase tracking-widest">
+          <CloudRain className="size-3" />
+          Emergency comms sent · 4 stakeholders
+        </div>
+        <ul className="mt-2 space-y-1.5">
+          {stakeholders.map((s) => (
+            <li
+              key={s.who}
+              className="flex items-center justify-between gap-2 rounded-md border border-border bg-background/40 px-2 py-1.5"
+            >
+              <div className="min-w-0">
+                <div className="text-xs font-medium truncate">{s.who}</div>
+                <div className="text-[10px] font-mono text-muted-foreground">{s.how}</div>
+              </div>
+              <a
+                href={s.action}
+                className="h-7 px-2 rounded-md text-[10px] font-medium inline-flex items-center gap-1 text-primary-foreground shrink-0"
+                style={{ background: "var(--gradient-aurora)" }}
+              >
+                {s.icon}
+                {s.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  // Generic outcome for other systems
+  return (
+    <div className="rounded-lg border border-success/40 bg-success/10 p-3 flex items-start gap-2">
+      <CheckCircle2 className="size-4 text-success shrink-0 mt-0.5" />
+      <div className="text-xs leading-relaxed flex-1">
+        <span className="font-semibold">Dispatched.</span> {winner.name} on the way ·{" "}
+        <span className="font-mono">{winner.eta}</span>
+        <div className="mt-2">
+          <a
+            href={`tel:${winner.phone}`}
+            className="h-8 px-3 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5 text-primary-foreground"
+            style={{ background: "var(--gradient-aurora)" }}
+          >
+            <Phone className="size-3" />
+            Call {winner.name}
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }
