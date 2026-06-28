@@ -859,139 +859,431 @@ function MiniStat({
 
 // ---------------- 2. Intake ----------------
 
-function IntakeCard({ floor }: { floor: Floor }) {
-  const [recording, setRecording] = useState(false);
-  const [hasPhoto, setHasPhoto] = useState(true);
+type IntakeMode = "voice" | "camera" | "sensor" | "qr";
 
-  // Pick the most severe hotspot on this floor for the demo transcript
+function IntakeCard({ floor }: { floor: Floor }) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
     floor.hotspots.find((h) => h.status === "warning") ??
     floor.hotspots[0];
 
-  const transcript = focus
-    ? TRANSCRIPTS[focus.system]
-    : '"Everything looks fine on this floor right now."';
+  const [mode, setMode] = useState<IntakeMode>("voice");
+
+  // ---- Voice (real MediaRecorder) ----
+  const [recording, setRecording] = useState(false);
+  const [level, setLevel] = useState(0);
+  const [seconds, setSeconds] = useState(0);
+  const [transcript, setTranscript] = useState<string>("");
+  const recRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const timerRef = useRef<number | null>(null);
+
+  const stopVoice = () => {
+    if (recRef.current && recRef.current.state !== "inactive") recRef.current.stop();
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (timerRef.current) window.clearInterval(timerRef.current);
+    audioCtxRef.current?.close().catch(() => {});
+    streamRef.current = null;
+    recRef.current = null;
+    audioCtxRef.current = null;
+    setRecording(false);
+    setLevel(0);
+  };
+
+  const startVoice = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const rec = new MediaRecorder(stream);
+      recRef.current = rec;
+      rec.start();
+
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new Ctx();
+      audioCtxRef.current = ctx;
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        setLevel(Math.min(1, Math.sqrt(sum / data.length) * 2.5));
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+      setSeconds(0);
+      timerRef.current = window.setInterval(() => setSeconds((s) => s + 1), 1000);
+      setRecording(true);
+      setTranscript("");
+    } catch {
+      // Fallback: simulate
+      setRecording(true);
+      setSeconds(0);
+      timerRef.current = window.setInterval(() => {
+        setLevel(Math.random());
+        setSeconds((s) => s + 1);
+      }, 200);
+    }
+  };
+
+  const toggleVoice = () => {
+    if (recording) {
+      stopVoice();
+      setTranscript(focus ? TRANSCRIPTS[focus.system] : "");
+    } else {
+      startVoice();
+    }
+  };
+
+  useEffect(() => () => stopVoice(), []);
+
+  // ---- Camera (real getUserMedia video) ----
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const camStreamRef = useRef<MediaStream | null>(null);
+  const [cameraOn, setCameraOn] = useState(false);
+  const [snapshot, setSnapshot] = useState<string | null>(null);
+
+  const stopCamera = () => {
+    camStreamRef.current?.getTracks().forEach((t) => t.stop());
+    camStreamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraOn(false);
+  };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      camStreamRef.current = stream;
+      setCameraOn(true);
+      setSnapshot(null);
+      // wait next frame so video element is mounted
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+      });
+    } catch {
+      setCameraOn(true);
+    }
+  };
+
+  const capture = () => {
+    const v = videoRef.current;
+    const c = canvasRef.current;
+    if (!v || !c) return;
+    c.width = v.videoWidth || 640;
+    c.height = v.videoHeight || 360;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(v, 0, 0, c.width, c.height);
+    setSnapshot(c.toDataURL("image/jpeg", 0.8));
+    stopCamera();
+  };
+
+  useEffect(() => () => stopCamera(), []);
+  useEffect(() => {
+    if (mode !== "camera") stopCamera();
+    if (mode !== "voice") stopVoice();
+  }, [mode]);
+
+  const hasInput =
+    (mode === "voice" && transcript) ||
+    (mode === "camera" && snapshot) ||
+    mode === "sensor" ||
+    mode === "qr";
 
   return (
     <CardShell
       index="02 · Report"
-      title="AI Intake — Voice & Photo"
-      subtitle="Scan QR, talk or snap. AI triages in seconds."
+      title="AI Intake"
+      subtitle="Voice, camera, sensor or QR — one agent."
       icon={<Sparkles className="size-4" />}
       accent="primary"
     >
-      <div className="rounded-lg border border-border bg-secondary/40 p-4">
-        <div className="flex items-center justify-between">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            Voice Note
-          </div>
-          <span className="text-[10px] font-mono text-muted-foreground">00:14</span>
-        </div>
-        <div className="mt-3 flex items-center gap-3">
+      {/* Mode tabs */}
+      <div className="grid grid-cols-4 gap-1 p-1 rounded-lg bg-secondary/40 border border-border">
+        {([
+          { k: "voice", icon: <Mic className="size-3.5" />, label: "Voice" },
+          { k: "camera", icon: <Camera className="size-3.5" />, label: "Camera" },
+          { k: "sensor", icon: <Radio className="size-3.5" />, label: "Sensor" },
+          { k: "qr", icon: <QrCode className="size-3.5" />, label: "QR" },
+        ] as { k: IntakeMode; icon: React.ReactNode; label: string }[]).map((t) => (
           <button
-            onClick={() => setRecording((r) => !r)}
-            className={`size-10 rounded-full grid place-items-center transition-all shrink-0 ${
-              recording
-                ? "bg-destructive text-destructive-foreground shadow-lg shadow-destructive/40"
-                : "text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/40"
+            key={t.k}
+            onClick={() => setMode(t.k)}
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-md text-[11px] font-medium transition-all ${
+              mode === t.k
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
-            style={recording ? undefined : { background: "var(--gradient-aurora)" }}
-            aria-label="Toggle recording"
           >
-            <Mic className="size-4" />
+            {t.icon}
+            {t.label}
           </button>
-          <div className="flex-1 h-8 flex items-center gap-[2px]">
-            {Array.from({ length: 42 }).map((_, i) => {
-              const h = 20 + Math.abs(Math.sin(i * 1.7)) * 80;
-              return (
-                <span
-                  key={i}
-                  style={{
-                    height: `${h}%`,
-                    background: recording
-                      ? `linear-gradient(180deg, var(--magenta), var(--primary))`
-                      : undefined,
-                  }}
-                  className={`w-[3px] rounded-full ${
-                    recording ? "" : "bg-muted-foreground/40"
-                  }`}
-                />
-              );
-            })}
-          </div>
-        </div>
-        <div className="mt-3 text-xs text-muted-foreground italic leading-relaxed">
-          {transcript}
-        </div>
+        ))}
       </div>
 
-      <div className="rounded-lg border border-border bg-secondary/40 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            Photo Evidence
+      {/* Active mode panel */}
+      <div className="rounded-lg border border-border bg-secondary/40 p-4 min-h-[180px]">
+        {mode === "voice" && (
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                Voice command
+              </div>
+              <span className="text-[10px] font-mono text-muted-foreground">
+                {String(Math.floor(seconds / 60)).padStart(2, "0")}:
+                {String(seconds % 60).padStart(2, "0")}
+              </span>
+            </div>
+            <div className="mt-4 flex flex-col items-center gap-3">
+              <button
+                onClick={toggleVoice}
+                className={`size-16 rounded-full grid place-items-center transition-all ${
+                  recording
+                    ? "bg-destructive text-destructive-foreground shadow-lg shadow-destructive/40"
+                    : "text-primary-foreground hover:scale-105 shadow-lg shadow-primary/40"
+                }`}
+                style={recording ? undefined : { background: "var(--gradient-aurora)" }}
+                aria-label={recording ? "Stop recording" : "Start recording"}
+              >
+                {recording ? <Square className="size-5 fill-current" /> : <Mic className="size-6" />}
+              </button>
+              <div className="h-8 w-full flex items-center justify-center gap-[2px]">
+                {Array.from({ length: 32 }).map((_, i) => {
+                  const base = 15 + Math.abs(Math.sin(i * 0.9 + seconds)) * 35;
+                  const h = recording ? Math.min(100, base + level * 80) : 15;
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        height: `${h}%`,
+                        background: recording
+                          ? "linear-gradient(180deg, var(--magenta), var(--primary))"
+                          : undefined,
+                      }}
+                      className={`w-[3px] rounded-full transition-all ${
+                        recording ? "" : "bg-muted-foreground/30"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+              {transcript && (
+                <p className="text-xs text-muted-foreground italic leading-relaxed text-center">
+                  {transcript}
+                </p>
+              )}
+            </div>
           </div>
-          <button
-            onClick={() => setHasPhoto((p) => !p)}
-            className="text-[10px] font-mono text-accent hover:underline"
-          >
-            {hasPhoto ? "Retake" : "Attach"}
-          </button>
-        </div>
-        {hasPhoto ? (
-          <div className="aspect-video rounded-md bg-background border border-border grid place-items-center relative overflow-hidden">
-            <div
-              className="absolute inset-0 opacity-50"
-              style={{ background: "var(--gradient-sunset)" }}
-            />
-            <Camera className="size-8 text-background relative" />
-            <span className="absolute bottom-2 left-2 text-[10px] font-mono text-foreground bg-background/70 px-1.5 py-0.5 rounded border border-border">
-              IMG_4421 · {focus?.label ?? "—"} · {floor.level}
-            </span>
+        )}
+
+        {mode === "camera" && (
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3">
+              Photo evidence
+            </div>
+            <div className="aspect-video rounded-md bg-background border border-border overflow-hidden relative">
+              {snapshot ? (
+                <img src={snapshot} alt="capture" className="w-full h-full object-cover" />
+              ) : cameraOn ? (
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div
+                  className="absolute inset-0 grid place-items-center"
+                  style={{ background: "var(--gradient-sunset)", opacity: 0.5 }}
+                >
+                  <Camera className="size-8 text-background relative" />
+                </div>
+              )}
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+            <div className="mt-3 flex justify-center gap-2">
+              {!cameraOn && !snapshot && (
+                <button
+                  onClick={startCamera}
+                  className="px-4 py-1.5 rounded-md text-xs font-medium text-primary-foreground shadow-md shadow-primary/30"
+                  style={{ background: "var(--gradient-aurora)" }}
+                >
+                  Start camera
+                </button>
+              )}
+              {cameraOn && (
+                <>
+                  <button
+                    onClick={capture}
+                    className="px-4 py-1.5 rounded-md text-xs font-medium text-primary-foreground shadow-md shadow-primary/30"
+                    style={{ background: "var(--gradient-aurora)" }}
+                  >
+                    Capture
+                  </button>
+                  <button
+                    onClick={stopCamera}
+                    className="px-3 py-1.5 rounded-md text-xs border border-border text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+              {snapshot && (
+                <button
+                  onClick={() => {
+                    setSnapshot(null);
+                    startCamera();
+                  }}
+                  className="px-3 py-1.5 rounded-md text-xs border border-border text-muted-foreground hover:text-foreground"
+                >
+                  Retake
+                </button>
+              )}
+            </div>
           </div>
-        ) : (
-          <button className="aspect-video w-full rounded-md border border-dashed border-border grid place-items-center text-muted-foreground hover:border-accent hover:text-accent transition-colors">
-            <ImageIcon className="size-6" />
-          </button>
+        )}
+
+        {mode === "sensor" && (
+          <SensorPanel focusLabel={focus?.label ?? "—"} />
+        )}
+
+        {mode === "qr" && (
+          <div className="flex flex-col items-center gap-3 py-2">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground self-start">
+              QR scanned
+            </div>
+            <div className="size-24 rounded-md border border-border bg-background grid place-items-center">
+              <QrCode className="size-14 text-foreground" />
+            </div>
+            <div className="text-xs text-muted-foreground text-center">
+              Asset linked:{" "}
+              <span className="text-foreground font-medium">{focus?.label ?? "—"}</span>
+              <br />
+              <span className="font-mono text-[10px]">{floor.level} · {focus?.zone}</span>
+            </div>
+          </div>
         )}
       </div>
 
-      <div
-        className="rounded-lg border p-4"
-        style={{
-          background:
-            "linear-gradient(135deg, color-mix(in oklch, var(--primary) 12%, transparent), color-mix(in oklch, var(--accent) 8%, transparent))",
-          borderColor: "color-mix(in oklch, var(--primary) 40%, transparent)",
-        }}
-      >
-        <div className="flex items-center gap-2 text-primary text-[10px] font-mono uppercase tracking-widest">
-          <Sparkles className="size-3" />
-          AI Triage Result
-        </div>
-        <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-          <Tag label="Type" value={focus ? SYSTEM_META[focus.system].label : "—"} tone="info" />
-          <Tag
-            label="Priority"
-            value={
-              focus?.status === "critical"
-                ? "Critical"
-                : focus?.status === "warning"
-                  ? "High"
-                  : "Low"
-            }
-            tone={focus?.status === "critical" ? "destructive" : "warning"}
-          />
-          <Tag label="Confidence" value="92%" tone="success" />
-        </div>
-        <button
-          className="mt-3 w-full h-9 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-primary-foreground shadow-lg shadow-primary/30"
-          style={{ background: "var(--gradient-aurora)" }}
+      {/* AI triage */}
+      {hasInput && (
+        <div
+          className="rounded-lg border p-3"
+          style={{
+            background:
+              "linear-gradient(135deg, color-mix(in oklch, var(--primary) 12%, transparent), color-mix(in oklch, var(--accent) 8%, transparent))",
+            borderColor: "color-mix(in oklch, var(--primary) 40%, transparent)",
+          }}
         >
-          <Send className="size-3.5" />
-          Dispatch Workflow
-        </button>
-      </div>
+          <div className="flex items-center gap-2 text-primary text-[10px] font-mono uppercase tracking-widest">
+            <Sparkles className="size-3" />
+            AI triage
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+            <Tag label="Type" value={focus ? SYSTEM_META[focus.system].label : "—"} tone="info" />
+            <Tag
+              label="Priority"
+              value={
+                focus?.status === "critical"
+                  ? "Critical"
+                  : focus?.status === "warning"
+                    ? "High"
+                    : "Low"
+              }
+              tone={focus?.status === "critical" ? "destructive" : "warning"}
+            />
+            <Tag label="Confidence" value="92%" tone="success" />
+          </div>
+          <button
+            className="mt-3 w-full h-9 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-primary-foreground shadow-lg shadow-primary/30"
+            style={{ background: "var(--gradient-aurora)" }}
+          >
+            <Send className="size-3.5" />
+            Dispatch workflow
+          </button>
+        </div>
+      )}
     </CardShell>
+  );
+}
+
+function SensorPanel({ focusLabel }: { focusLabel: string }) {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setT((x) => x + 1), 1200);
+    return () => window.clearInterval(id);
+  }, []);
+  const readings = [
+    {
+      icon: <Thermometer className="size-3.5" />,
+      label: "Temp",
+      value: `${(22.4 + Math.sin(t / 3) * 0.6).toFixed(1)}°C`,
+      tone: "text-info",
+    },
+    {
+      icon: <Gauge className="size-3.5" />,
+      label: "Vibration",
+      value: `${(0.42 + Math.abs(Math.sin(t)) * 0.18).toFixed(2)} g`,
+      tone: "text-warning",
+    },
+    {
+      icon: <CircleDot className="size-3.5" />,
+      label: "CO₂",
+      value: `${Math.round(540 + Math.sin(t / 2) * 40)} ppm`,
+      tone: "text-lime",
+    },
+    {
+      icon: <Activity className="size-3.5" />,
+      label: "Power",
+      value: `${(1.84 + Math.sin(t / 4) * 0.2).toFixed(2)} kW`,
+      tone: "text-magenta",
+    },
+  ];
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          Live sensor feed
+        </div>
+        <span className="text-[10px] font-mono text-success flex items-center gap-1">
+          <span className="size-1.5 rounded-full bg-success animate-pulse" />
+          {focusLabel}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {readings.map((r) => (
+          <div
+            key={r.label}
+            className="rounded-md border border-border bg-background/50 px-3 py-2"
+          >
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              {r.icon}
+              {r.label}
+            </div>
+            <div className={`text-base font-semibold font-mono mt-0.5 ${r.tone}`}>
+              {r.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
