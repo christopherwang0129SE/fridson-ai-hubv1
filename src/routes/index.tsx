@@ -375,7 +375,13 @@ function Index() {
             <div data-tour="intake" className="min-h-0 min-w-0 flex">
               <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} onDispatch={dispatchWorkflow} /></div>
             </div>
-            <WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} onDispatch={dispatchWorkflow} />
+            <WorkflowCard
+              floor={floor}
+              alerts={alerts}
+              dispatchedAt={dispatchedAt}
+              onDispatch={dispatchWorkflow}
+              onSelectScenario={(s) => setFloorId(s === "lockout" ? "l1" : "l3")}
+            />
           </div>
         </main>
       </div>
