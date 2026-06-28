@@ -1529,34 +1529,69 @@ function SensorPanel({
 
       {settings && (
         <div className="mt-3 rounded-md border border-border bg-background/50 p-3 space-y-2">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-            Alert thresholds
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              Alert thresholds
+            </div>
+            <button
+              onClick={() =>
+                setThresholds(
+                  Object.fromEntries(
+                    keys.map((k) => [k, METRICS[k].recommended]),
+                  ) as Record<MetricKey, number>,
+                )
+              }
+              className="text-[10px] font-mono text-primary hover:underline"
+              title="Reset to recommended standards"
+            >
+              Use recommended
+            </button>
           </div>
           {keys.map((k) => {
             const m = METRICS[k];
+            const atRec = Math.abs(thresholds[k] - m.recommended) < m.step / 2;
             return (
-              <div key={k} className="flex items-center gap-2 text-xs">
-                <span className="w-20 flex items-center gap-1 text-muted-foreground">
-                  {m.icon}
-                  {m.label}
-                </span>
-                <input
-                  type="range"
-                  min={m.min}
-                  max={m.max}
-                  step={m.step}
-                  value={thresholds[k]}
-                  onChange={(e) =>
-                    setThresholds((prev) => ({
-                      ...prev,
-                      [k]: Number(e.target.value),
-                    }))
-                  }
-                  className="flex-1 accent-primary"
-                />
-                <span className="w-16 text-right font-mono tabular-nums text-foreground">
-                  {thresholds[k].toFixed(m.decimals)} {m.unit}
-                </span>
+              <div key={k} className="text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-20 flex items-center gap-1 text-muted-foreground">
+                    {m.icon}
+                    {m.label}
+                  </span>
+                  <input
+                    type="range"
+                    min={m.min}
+                    max={m.max}
+                    step={m.step}
+                    value={thresholds[k]}
+                    onChange={(e) =>
+                      setThresholds((prev) => ({
+                        ...prev,
+                        [k]: Number(e.target.value),
+                      }))
+                    }
+                    className="flex-1 accent-primary"
+                  />
+                  <span className="w-16 text-right font-mono tabular-nums text-foreground">
+                    {thresholds[k].toFixed(m.decimals)} {m.unit}
+                  </span>
+                </div>
+                <div className="ml-[88px] mt-0.5 flex items-center justify-between gap-2 text-[9px] font-mono text-muted-foreground">
+                  <span className="truncate">
+                    rec {m.recommended.toFixed(m.decimals)} {m.unit} · {m.recSource}
+                  </span>
+                  {atRec ? (
+                    <span className="text-success shrink-0">✓ at recommended</span>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        setThresholds((prev) => ({ ...prev, [k]: m.recommended }))
+                      }
+                      className="text-primary hover:underline shrink-0"
+                    >
+                      reset
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
