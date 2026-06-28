@@ -435,7 +435,7 @@ function CardShell({
         ? "bg-accent/15 text-accent"
         : "bg-magenta/15 text-magenta";
   return (
-    <section className="relative rounded-2xl border border-border bg-card/80 backdrop-blur-sm overflow-hidden flex flex-col">
+    <section className="relative rounded-2xl border border-border bg-card/80 backdrop-blur-sm overflow-hidden flex flex-col h-full min-h-0">
       <div
         className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r ${ringClass} via-transparent to-transparent`}
       />
@@ -455,7 +455,7 @@ function CardShell({
           </div>
         </div>
       </div>
-      <div className="p-5 flex-1 flex flex-col gap-4">{children}</div>
+      <div className="p-4 flex-1 min-h-0 overflow-y-auto flex flex-col gap-3">{children}</div>
     </section>
   );
 }
