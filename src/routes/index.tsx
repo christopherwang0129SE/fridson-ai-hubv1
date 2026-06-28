@@ -1276,7 +1276,7 @@ function IntakeCard({
   );
 }
 
-type MetricKey = "temp" | "vibration" | "co2" | "power";
+type MetricKey = "temp" | "humidity" | "noise" | "vibration" | "co2" | "power";
 
 const METRICS: Record<
   MetricKey,
@@ -1290,6 +1290,8 @@ const METRICS: Record<
     period: number;
     decimals: number;
     defaultThreshold: number;
+    recommended: number;
+    recSource: string;
     min: number;
     max: number;
     step: number;
@@ -1304,10 +1306,44 @@ const METRICS: Record<
     amp: 0.6,
     period: 3,
     decimals: 1,
-    defaultThreshold: 23.0,
+    defaultThreshold: 24.0,
+    recommended: 24.0,
+    recSource: "EN 16798 · office comfort",
     min: 18,
     max: 30,
     step: 0.1,
+  },
+  humidity: {
+    label: "Humidity",
+    unit: "%RH",
+    icon: <Droplets className="size-3.5" />,
+    tone: "text-info",
+    base: 46,
+    amp: 6,
+    period: 5,
+    decimals: 0,
+    defaultThreshold: 60,
+    recommended: 60,
+    recSource: "ASHRAE 55 · 30–60 %RH",
+    min: 20,
+    max: 80,
+    step: 1,
+  },
+  noise: {
+    label: "Noise",
+    unit: "dB",
+    icon: <Volume2 className="size-3.5" />,
+    tone: "text-magenta",
+    base: 48,
+    amp: 8,
+    period: 2,
+    decimals: 0,
+    defaultThreshold: 55,
+    recommended: 55,
+    recSource: "WHO · open office ≤ 55 dB",
+    min: 30,
+    max: 90,
+    step: 1,
   },
   vibration: {
     label: "Vibration",
@@ -1319,6 +1355,8 @@ const METRICS: Record<
     period: 1,
     decimals: 2,
     defaultThreshold: 0.55,
+    recommended: 0.55,
+    recSource: "ISO 10816 · class II machines",
     min: 0.1,
     max: 1.0,
     step: 0.01,
@@ -1332,7 +1370,9 @@ const METRICS: Record<
     amp: 40,
     period: 2,
     decimals: 0,
-    defaultThreshold: 570,
+    defaultThreshold: 800,
+    recommended: 800,
+    recSource: "REHVA · indoor air ≤ 800 ppm",
     min: 400,
     max: 1200,
     step: 10,
@@ -1347,6 +1387,8 @@ const METRICS: Record<
     period: 4,
     decimals: 2,
     defaultThreshold: 2.0,
+    recommended: 2.0,
+    recSource: "Baseline + 10% (nameplate)",
     min: 0.5,
     max: 5.0,
     step: 0.05,
