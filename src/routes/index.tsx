@@ -17,7 +17,6 @@ import {
   Clock,
   DollarSign,
   Star,
-  Wind,
   Coffee,
   Refrigerator,
   Printer,
@@ -37,6 +36,13 @@ import {
   Zap,
   Volume2,
   Droplets,
+  KeyRound,
+  CloudRain,
+  Phone,
+  Mail,
+  MessageSquare,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import floorPlan from "@/assets/floor-plan.jpg";
 
