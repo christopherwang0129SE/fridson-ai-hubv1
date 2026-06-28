@@ -48,6 +48,9 @@
   --color-ring-offset-background: var(--background);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-magenta: var(--magenta);
+  --color-lime: var(--lime);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
