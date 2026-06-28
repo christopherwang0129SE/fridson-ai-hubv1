@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   Activity,
   AlertTriangle,
@@ -274,6 +275,26 @@ function Index() {
   const [alerts, setAlerts] = useState<SensorAlert[]>([]);
   const pushAlert = (a: SensorAlert) =>
     setAlerts((prev) => [a, ...prev].slice(0, 6));
+  const [dispatchedAt, setDispatchedAt] = useState<number | null>(null);
+  const dispatchWorkflow = (label: string, vendorName: string) => {
+    setDispatchedAt(Date.now());
+    toast.success("Workflow dispatched", {
+      description: `${label} → ${vendorName} accepted the job.`,
+      duration: 4000,
+    });
+    window.setTimeout(() => {
+      toast("Tenant notified", {
+        description: "SMS + dashboard ping sent to floor occupants.",
+        duration: 4000,
+      });
+    }, 1400);
+    window.setTimeout(() => {
+      toast("Technician en route", {
+        description: `${vendorName} ETA updated. Live tracking enabled.`,
+        duration: 4000,
+      });
+    }, 3200);
+  };
 
   const toggleDemo = () => {
     const next = !demo;
@@ -312,10 +333,10 @@ function Index() {
               <div className="flex-1 min-w-0"><DigitalTwinCard floor={floor} /></div>
             </div>
             <div data-tour="intake" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} /></div>
+              <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} onDispatch={dispatchWorkflow} /></div>
             </div>
             <div data-tour="workflow" className="min-h-0 min-w-0 flex">
-              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} /></div>
+              <div className="flex-1 min-w-0"><WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} /></div>
             </div>
           </div>
         </main>
@@ -879,9 +900,11 @@ type IntakeMode = "voice" | "camera" | "sensor" | "qr";
 function IntakeCard({
   floor,
   onAlert,
+  onDispatch,
 }: {
   floor: Floor;
   onAlert: (a: SensorAlert) => void;
+  onDispatch: (label: string, vendorName: string) => void;
 }) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
@@ -1235,6 +1258,12 @@ function IntakeCard({
           <button
             className="mt-3 w-full h-9 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-primary-foreground shadow-lg shadow-primary/30"
             style={{ background: "var(--gradient-aurora)" }}
+            onClick={() => {
+              if (!focus) return;
+              const pb = VENDOR_PLAYBOOK[focus.system];
+              const winner = pb.vendors.find((v) => v.selected) ?? pb.vendors[0];
+              onDispatch(SYSTEM_META[focus.system].label, winner.name);
+            }}
           >
             <Send className="size-3.5" />
             Dispatch workflow
@@ -1617,7 +1646,15 @@ function genericSteps(vendor: string, asset: string) {
   ];
 }
 
-function WorkflowCard({ floor, alerts }: { floor: Floor; alerts: SensorAlert[] }) {
+function WorkflowCard({
+  floor,
+  alerts,
+  dispatchedAt,
+}: {
+  floor: Floor;
+  alerts: SensorAlert[];
+  dispatchedAt: number | null;
+}) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
     floor.hotspots.find((h) => h.status === "warning") ??
@@ -1625,7 +1662,29 @@ function WorkflowCard({ floor, alerts }: { floor: Floor; alerts: SensorAlert[] }
 
   const playbook = focus ? VENDOR_PLAYBOOK[focus.system] : VENDOR_PLAYBOOK.hvac;
   const winner = playbook.vendors.find((v) => v.selected) ?? playbook.vendors[0];
-  const others = playbook.vendors.filter((v) => v !== winner);
+
+  // Animate execution progress after dispatch
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    if (!dispatchedAt) {
+      setProgress(0);
+      return;
+    }
+    setProgress(8);
+    const id = window.setInterval(() => {
+      setProgress((p) => {
+        const next = p + (p < 60 ? 4 : p < 85 ? 2 : 1);
+        return next >= 92 ? 92 : next;
+      });
+    }, 600);
+    return () => window.clearInterval(id);
+  }, [dispatchedAt]);
+
+  // Step status driven by progress
+  const stepCount = playbook.steps.length;
+  const activeStep = dispatchedAt
+    ? Math.min(stepCount - 1, Math.floor((progress / 100) * stepCount))
+    : 2; // pre-dispatch: third step "selected" is active
 
   return (
     <CardShell
@@ -1695,49 +1754,110 @@ function WorkflowCard({ floor, alerts }: { floor: Floor; alerts: SensorAlert[] }
         )}
       </div>
 
-      {/* Winning vendor — hero */}
-      <div
-        className="rounded-lg border border-magenta/50 p-3 shadow-lg shadow-magenta/10"
-        style={{
-          background:
-            "linear-gradient(135deg, color-mix(in oklch, var(--magenta) 14%, transparent), transparent)",
-        }}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <ChevronRight className="size-4 text-magenta shrink-0" />
-            <span className="text-sm font-medium truncate">{winner.name}</span>
+      {/* Bidder leaderboard */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            Live bids · {playbook.vendors.length} contractors
           </div>
-          <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-magenta text-background">
-            Selected
-          </span>
+          <span className="text-[10px] font-mono text-magenta">ranked by score</span>
         </div>
-        <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] font-mono">
-          <span className="flex items-center gap-1 text-info">
-            <Clock className="size-3" /> {winner.eta}
-          </span>
-          <span className="flex items-center gap-1 text-lime">
-            <DollarSign className="size-3" /> {winner.price}
-          </span>
-          <span className="flex items-center gap-1 text-warning">
-            <Star className="size-3" /> {winner.rating}
-          </span>
-        </div>
-        <div className="mt-2 text-[10px] font-mono text-muted-foreground">
-          beats {others.length} other bids on reliability × cost × ETA
-        </div>
+        <ul className="space-y-1.5">
+          {playbook.vendors.map((v) => {
+            const isWinner = v === winner;
+            return (
+              <li
+                key={v.name}
+                className={`rounded-lg border px-2.5 py-2 transition-colors ${
+                  isWinner
+                    ? "border-magenta/60 shadow-md shadow-magenta/10"
+                    : "border-border bg-background/40"
+                }`}
+                style={
+                  isWinner
+                    ? {
+                        background:
+                          "linear-gradient(135deg, color-mix(in oklch, var(--magenta) 16%, transparent), transparent)",
+                      }
+                    : undefined
+                }
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {isWinner ? (
+                      <ChevronRight className="size-3.5 text-magenta shrink-0" />
+                    ) : (
+                      <span className="size-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                    )}
+                    <span
+                      className={`text-xs truncate ${
+                        isWinner ? "font-semibold" : "text-muted-foreground"
+                      }`}
+                    >
+                      {v.name}
+                    </span>
+                  </div>
+                  {v.badge && (
+                    <span
+                      className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${
+                        isWinner
+                          ? "bg-magenta text-background"
+                          : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {v.badge}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1.5 grid grid-cols-3 gap-2 text-[11px] font-mono">
+                  <span className="flex items-center gap-1 text-info">
+                    <Clock className="size-3" /> {v.eta}
+                  </span>
+                  <span className="flex items-center gap-1 text-lime">
+                    <DollarSign className="size-3" /> {v.price}
+                  </span>
+                  <span className="flex items-center gap-1 text-warning">
+                    <Star className="size-3" /> {v.rating}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
 
       <div>
-        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
-          Execution
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            Execution
+          </div>
+          <div className="text-[10px] font-mono text-muted-foreground">
+            {dispatchedAt ? `${progress}%` : "awaiting dispatch"}
+          </div>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden mb-2.5">
+          <div
+            className="h-full rounded-full transition-all duration-500 ease-out"
+            style={{
+              width: `${dispatchedAt ? progress : 0}%`,
+              background: "var(--gradient-aurora)",
+            }}
+          />
         </div>
         <ol className="relative space-y-2.5 pl-5 before:content-[''] before:absolute before:left-[7px] before:top-1 before:bottom-1 before:w-px before:bg-border">
-          {playbook.steps.map((s) => {
+          {playbook.steps.map((s, i) => {
+            const status: "done" | "active" | "pending" =
+              !dispatchedAt
+                ? s.status
+                : i < activeStep
+                  ? "done"
+                  : i === activeStep
+                    ? "active"
+                    : "pending";
             const color =
-              s.status === "done"
+              status === "done"
                 ? "bg-success text-background"
-                : s.status === "active"
+                : status === "active"
                   ? "bg-magenta text-background animate-pulse"
                   : "bg-secondary text-muted-foreground";
             return (
@@ -1747,7 +1867,9 @@ function WorkflowCard({ floor, alerts }: { floor: Floor; alerts: SensorAlert[] }
                 />
                 <div className="flex items-baseline justify-between gap-2">
                   <div className="text-xs font-medium">{s.title}</div>
-                  <div className="text-[10px] font-mono text-muted-foreground">{s.time}</div>
+                  <div className="text-[10px] font-mono text-muted-foreground">
+                    {status === "pending" ? "—" : s.time}
+                  </div>
                 </div>
               </li>
             );
@@ -1758,9 +1880,16 @@ function WorkflowCard({ floor, alerts }: { floor: Floor; alerts: SensorAlert[] }
       <div className="mt-auto rounded-lg border border-warning/30 bg-warning/10 p-3 flex items-start gap-3">
         <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
         <div className="text-xs text-muted-foreground leading-relaxed">
-          <span className="text-foreground font-medium">Approval pending.</span>{" "}
-          {winner.name} dispatches in{" "}
-          <span className="font-mono text-warning">02:14</span> if no override.
+          <span className="text-foreground font-medium">
+            {dispatchedAt ? "Dispatched · live tracking" : "Approval pending."}
+          </span>{" "}
+          {dispatchedAt
+            ? `${winner.name} on the way. Push notifications sent.`
+            : `${winner.name} dispatches in `}
+          {!dispatchedAt && (
+            <span className="font-mono text-warning">02:14</span>
+          )}
+          {!dispatchedAt && " if no override."}
         </div>
       </div>
     </CardShell>
