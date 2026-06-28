@@ -1629,7 +1629,8 @@ function SensorPanel({
 }
 
 const TRANSCRIPTS: Record<SystemKey, string> = {
-  hvac: '"Loud rattling sound from the ventilation in the east wing. Started about an hour ago — getting worse."',
+  lockout: '"I\'m standing at the main entrance — my badge won\'t open the door and the app says my key expired. There are two of us out here."',
+  roof: '"There\'s water dripping from the boardroom ceiling — a tile is sagging and the carpet is getting wet. It started during the rain this morning."',
   coffee: '"The espresso machine in the pantry won\'t pull a shot. Pressure gauge looks low and it\'s making a hissing noise."',
   fridge: '"The kitchen fridge feels warm and the milk has gone off. The compressor keeps clicking on and off."',
   office: '"The big printer near the print bay jams every other job. It\'s eating paper and the rollers sound rough."',
