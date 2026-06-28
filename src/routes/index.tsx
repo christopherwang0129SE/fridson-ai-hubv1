@@ -250,7 +250,7 @@ function Index() {
   const floor = useMemo(() => FLOORS.find((f) => f.id === floorId)!, [floorId]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased">
+    <div className="h-screen overflow-hidden flex flex-col bg-background text-foreground font-sans antialiased">
       {/* Aurora background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 size-[520px] rounded-full bg-primary/25 blur-[120px]" />
@@ -259,10 +259,10 @@ function Index() {
       </div>
 
       <Header />
-      <div className="flex">
+      <div className="flex flex-1 min-h-0">
         <FloorSidebar floorId={floorId} onSelect={setFloorId} />
-        <main className="flex-1 px-6 lg:px-10 py-6 max-w-[1600px] mx-auto">
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <main className="flex-1 min-w-0 px-4 lg:px-6 py-4 overflow-hidden">
+          <div className="grid grid-cols-3 gap-4 h-full min-h-0">
             <DigitalTwinCard floor={floor} />
             <IntakeCard floor={floor} />
             <WorkflowCard floor={floor} />
@@ -435,7 +435,7 @@ function CardShell({
         ? "bg-accent/15 text-accent"
         : "bg-magenta/15 text-magenta";
   return (
-    <section className="relative rounded-2xl border border-border bg-card/80 backdrop-blur-sm overflow-hidden flex flex-col">
+    <section className="relative rounded-2xl border border-border bg-card/80 backdrop-blur-sm overflow-hidden flex flex-col h-full min-h-0">
       <div
         className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r ${ringClass} via-transparent to-transparent`}
       />
@@ -455,7 +455,7 @@ function CardShell({
           </div>
         </div>
       </div>
-      <div className="p-5 flex-1 flex flex-col gap-4">{children}</div>
+      <div className="p-4 flex-1 min-h-0 overflow-y-auto flex flex-col gap-3">{children}</div>
     </section>
   );
 }
@@ -480,7 +480,7 @@ function DigitalTwinCard({ floor }: { floor: Floor }) {
       icon={<Building2 className="size-4" />}
       accent="accent"
     >
-      <div className="relative rounded-lg overflow-hidden border border-border bg-background aspect-[4/3]">
+      <div className="relative rounded-lg overflow-hidden border border-border bg-background aspect-[16/10]">
         <img
           src={floorPlan}
           alt={`${floor.level} digital twin`}
