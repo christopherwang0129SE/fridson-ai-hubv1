@@ -480,7 +480,7 @@ function DigitalTwinCard({ floor }: { floor: Floor }) {
       icon={<Building2 className="size-4" />}
       accent="accent"
     >
-      <div className="relative rounded-lg overflow-hidden border border-border bg-background aspect-[4/3]">
+      <div className="relative rounded-lg overflow-hidden border border-border bg-background aspect-[16/10]">
         <img
           src={floorPlan}
           alt={`${floor.level} digital twin`}
