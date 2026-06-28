@@ -1945,13 +1945,17 @@ function WorkflowCard({
     : 2; // pre-dispatch: third step "selected" is active
 
   return (
-    <CardShell
-      index="03 · Act"
-      title="Action Workflow"
-      subtitle={`AI-brokered ${playbook.service.toLowerCase()}`}
-      icon={<Wrench className="size-4" />}
-      accent="magenta"
-    >
+    <>
+      {/* ============ Column 3 · Bidders & approval ============ */}
+      <div data-tour="workflow" className="min-h-0 min-w-0 flex">
+        <div className="flex-1 min-w-0">
+          <CardShell
+            index="03 · Bid"
+            title="Vendor Leaderboard"
+            subtitle={`AI-brokered ${playbook.service.toLowerCase()}`}
+            icon={<Wrench className="size-4" />}
+            accent="magenta"
+          >
       {/* Potential failure alerts */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -2011,36 +2015,6 @@ function WorkflowCard({
           </ol>
         )}
       </div>
-
-      {/* AI-generated guidance for the person on the ground */}
-      {focus && AI_GUIDANCE[focus.system] && (
-        <div
-          className="rounded-lg border border-accent/40 p-2.5"
-          style={{
-            background:
-              "linear-gradient(135deg, color-mix(in oklch, var(--accent) 14%, transparent), transparent)",
-          }}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-accent">
-              <Sparkles className="size-3" />
-              AI action plan
-            </div>
-            <span className="text-[9px] font-mono text-muted-foreground">auto-generated</span>
-          </div>
-          <div className="text-xs font-medium mb-1.5">{AI_GUIDANCE[focus.system]!.title}</div>
-          <ol className="space-y-1 text-[11px] leading-relaxed">
-            {AI_GUIDANCE[focus.system]!.steps.map((s, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="size-4 shrink-0 rounded-full grid place-items-center text-[9px] font-mono bg-accent/30 text-accent">
-                  {i + 1}
-                </span>
-                <span className="text-foreground/90">{s}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
 
       {/* Bidder leaderboard */}
       <div>
@@ -2119,6 +2093,90 @@ function WorkflowCard({
         </ul>
       </div>
 
+      {/* Approval — moved up so it lives with the bidders */}
+      <div className="mt-auto">
+        {!approved ? (
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
+              <div className="text-xs text-muted-foreground leading-relaxed flex-1">
+                <span className="text-foreground font-medium">Approval pending.</span>{" "}
+                Dispatch <span className="text-foreground">{winner.name}</span> ·{" "}
+                <span className="font-mono">{winner.eta}</span> ·{" "}
+                <span className="font-mono">{winner.price}</span>
+              </div>
+            </div>
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              <button
+                onClick={approveAndCall}
+                className="h-9 rounded-md text-xs font-semibold inline-flex items-center justify-center gap-1.5 text-primary-foreground shadow-md shadow-primary/30 hover:opacity-90"
+                style={{ background: "var(--gradient-aurora)" }}
+              >
+                <Phone className="size-3.5" />
+                Yes · approve & call
+              </button>
+              <button
+                className="h-9 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground"
+                onClick={() => toast("Override sent", { description: "AI will re-bid the job." })}
+              >
+                No · re-bid
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-success/40 bg-success/10 p-3 flex items-start gap-2">
+            <CheckCircle2 className="size-4 text-success shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed flex-1">
+              <span className="font-semibold">{winner.name}</span> approved · ETA{" "}
+              <span className="font-mono">{winner.eta}</span>. Execution streaming in column 04.
+            </div>
+          </div>
+        )}
+      </div>
+          </CardShell>
+        </div>
+      </div>
+
+      {/* ============ Column 4 · Execution & guidance ============ */}
+      <div data-tour="execute" className="min-h-0 min-w-0 flex">
+        <div className="flex-1 min-w-0">
+          <CardShell
+            index="04 · Execute"
+            title="Live Response"
+            subtitle="Guided action plan & progress"
+            icon={<Activity className="size-4" />}
+            accent="accent"
+          >
+      {/* AI-generated guidance for the person on the ground */}
+      {focus && AI_GUIDANCE[focus.system] && (
+        <div
+          className="rounded-lg border border-accent/40 p-2.5"
+          style={{
+            background:
+              "linear-gradient(135deg, color-mix(in oklch, var(--accent) 14%, transparent), transparent)",
+          }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-accent">
+              <Sparkles className="size-3" />
+              AI action plan
+            </div>
+            <span className="text-[9px] font-mono text-muted-foreground">auto-generated</span>
+          </div>
+          <div className="text-xs font-medium mb-1.5">{AI_GUIDANCE[focus.system]!.title}</div>
+          <ol className="space-y-1 text-[11px] leading-relaxed">
+            {AI_GUIDANCE[focus.system]!.steps.map((s, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="size-4 shrink-0 rounded-full grid place-items-center text-[9px] font-mono bg-accent/30 text-accent">
+                  {i + 1}
+                </span>
+                <span className="text-foreground/90">{s}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
@@ -2170,8 +2228,9 @@ function WorkflowCard({
         </ol>
       </div>
 
-      {/* Approval + outcome */}
+      {/* Outcome panel (after approval) + simulation control */}
       <div className="mt-auto space-y-2">
+        {approved && <ScenarioOutcome system={focus?.system ?? "lockout"} winner={winner} />}
         <button
           onClick={runSimulation}
           className="w-full h-8 rounded-md text-[11px] font-medium border border-accent/50 text-accent hover:bg-accent/10 inline-flex items-center justify-center gap-1.5"
@@ -2182,39 +2241,11 @@ function WorkflowCard({
             ? `Simulating · ${progress}%`
             : "▶ Run AI workflow simulation · 60 s"}
         </button>
-        {!approved ? (
-          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
-              <div className="text-xs text-muted-foreground leading-relaxed flex-1">
-                <span className="text-foreground font-medium">Approval pending.</span>{" "}
-                Dispatch <span className="text-foreground">{winner.name}</span> ·{" "}
-                <span className="font-mono">{winner.eta}</span> ·{" "}
-                <span className="font-mono">{winner.price}</span>
-              </div>
-            </div>
-            <div className="mt-2.5 grid grid-cols-2 gap-2">
-              <button
-                onClick={approveAndCall}
-                className="h-9 rounded-md text-xs font-semibold inline-flex items-center justify-center gap-1.5 text-primary-foreground shadow-md shadow-primary/30 hover:opacity-90"
-                style={{ background: "var(--gradient-aurora)" }}
-              >
-                <Phone className="size-3.5" />
-                Yes · approve & call
-              </button>
-              <button
-                className="h-9 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground"
-                onClick={() => toast("Override sent", { description: "AI will re-bid the job." })}
-              >
-                No · re-bid
-              </button>
-            </div>
-          </div>
-        ) : (
-          <ScenarioOutcome system={focus?.system ?? "lockout"} winner={winner} />
-        )}
       </div>
-    </CardShell>
+          </CardShell>
+        </div>
+      </div>
+    </>
   );
 }
 
