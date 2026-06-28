@@ -375,7 +375,13 @@ function Index() {
             <div data-tour="intake" className="min-h-0 min-w-0 flex">
               <div className="flex-1 min-w-0"><IntakeCard floor={floor} onAlert={pushAlert} onDispatch={dispatchWorkflow} /></div>
             </div>
-            <WorkflowCard floor={floor} alerts={alerts} dispatchedAt={dispatchedAt} onDispatch={dispatchWorkflow} />
+            <WorkflowCard
+              floor={floor}
+              alerts={alerts}
+              dispatchedAt={dispatchedAt}
+              onDispatch={dispatchWorkflow}
+              onSelectScenario={(s) => setFloorId(s === "lockout" ? "l1" : "l3")}
+            />
           </div>
         </main>
       </div>
@@ -1831,11 +1837,13 @@ function WorkflowCard({
   alerts,
   dispatchedAt,
   onDispatch,
+  onSelectScenario,
 }: {
   floor: Floor;
   alerts: SensorAlert[];
   dispatchedAt: number | null;
   onDispatch: (label: string, vendorName: string) => void;
+  onSelectScenario?: (s: "lockout" | "roof") => void;
 }) {
   const focus =
     floor.hotspots.find((h) => h.status === "critical") ??
@@ -2227,6 +2235,31 @@ function WorkflowCard({
       {/* Outcome panel (after approval) + simulation control */}
       <div className="mt-auto space-y-2">
         {approved && <ScenarioOutcome system={focus?.system ?? "lockout"} winner={winner} />}
+        {onSelectScenario && (focus?.system === "lockout" || focus?.system === "roof") && (
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <span className="text-muted-foreground uppercase tracking-wider">Scenario</span>
+            <button
+              onClick={() => onSelectScenario("lockout")}
+              className={`flex-1 h-6 rounded-md border transition ${
+                focus?.system === "lockout"
+                  ? "border-accent/60 bg-accent/15 text-accent"
+                  : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
+            >
+              Lobby lockout
+            </button>
+            <button
+              onClick={() => onSelectScenario("roof")}
+              className={`flex-1 h-6 rounded-md border transition ${
+                focus?.system === "roof"
+                  ? "border-accent/60 bg-accent/15 text-accent"
+                  : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
+            >
+              Boardroom roof leak
+            </button>
+          </div>
+        )}
         <button
           onClick={runSimulation}
           className="w-full h-8 rounded-md text-[11px] font-medium border border-accent/50 text-accent hover:bg-accent/10 inline-flex items-center justify-center gap-1.5"
